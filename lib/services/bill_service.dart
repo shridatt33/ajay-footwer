@@ -14,11 +14,11 @@ class BillService {
   static final BillService instance = BillService._();
 
   static String get _baseUrl {
-    if (kIsWeb) return 'http://localhost:5000/api';
+    if (kIsWeb) return 'https://ajay-footwer.onrender.com/api';
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return 'http://10.0.2.2:5000/api';
+      return 'https://ajay-footwer.onrender.com/api';
     }
-    return 'http://127.0.0.1:5000/api';
+    return 'https://ajay-footwer.onrender.com/api';
   }
 
   // ── POST /bills ─────────────────────────────────────────────────────────────
