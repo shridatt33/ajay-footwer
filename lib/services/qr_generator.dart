@@ -1,10 +1,10 @@
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+import 'package:permission_handler/permission_handler.dart';
 import 'package:printing/printing.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
@@ -39,6 +39,34 @@ class QrGeneratorService {
     }
 
     return byteData.buffer.asUint8List();
+  }
+
+  Future<void> saveQrCodeToGallery({
+    required String qrData,
+    required String productId,
+  }) async {
+    final bytes = await generateQrImageBytes(qrData);
+
+    if (Platform.isAndroid) {
+      const channel = MethodChannel('com.example.ajayfw/qr_gallery');
+      final androidSdk = await channel.invokeMethod<int>('getAndroidSdk') ?? 0;
+      if (androidSdk < 29) {
+        final permissionStatus = await Permission.storage.request();
+        if (!permissionStatus.isGranted) {
+          throw Exception('Storage permission is required to save the QR code to Gallery.');
+        }
+      }
+    }
+
+    const channel = MethodChannel('com.example.ajayfw/qr_gallery');
+    final saved = await channel.invokeMethod<bool>('saveQrToGallery', {
+      'imageBytes': bytes,
+      'productId': productId,
+    });
+
+    if (saved != true) {
+      throw StateError('Failed to save QR code to Gallery.');
+    }
   }
 
   Future<File> saveQrImageToDocuments({

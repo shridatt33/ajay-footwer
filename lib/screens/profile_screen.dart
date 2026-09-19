@@ -5,6 +5,7 @@ import '../models/shop_profile.dart';
 import '../services/shop_profile_repository.dart';
 import 'billing_history_screen.dart';
 import 'categories_screen.dart';
+import 'printer_settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -152,6 +153,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             );
                           } else if (title == 'Shop Information') {
                             _openEditForm(profile);
+                          } else if (title == 'Printer Settings') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const PrinterSettingsScreen(),
+                              ),
+                            );
                           } else if (title == 'Logout') {
                             _showLogoutDialog();
                           } else {

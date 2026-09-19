@@ -17,6 +17,15 @@ subprojects {
 }
 subprojects {
     project.evaluationDependsOn(":app")
+
+    plugins.withType<com.android.build.gradle.LibraryPlugin> {
+        extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
+            compileSdk = 36
+            if (namespace.isNullOrBlank()) {
+                namespace = "id.kakzaki.blue_thermal_printer"
+            }
+        }
+    }
 }
 
 tasks.register<Delete>("clean") {

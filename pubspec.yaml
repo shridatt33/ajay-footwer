@@ -42,6 +42,14 @@ dependencies:
   mobile_scanner: ^5.2.3
   qr_flutter: ^4.1.0
   http: ^1.2.0
+  permission_handler: ^12.0.0
+  blue_thermal_printer:
+    path: vendor/blue_thermal_printer
+  shared_preferences: ^2.5.5
+
+dependency_overrides:
+  blue_thermal_printer:
+    path: vendor/blue_thermal_printer
 
 dev_dependencies:
   flutter_test:

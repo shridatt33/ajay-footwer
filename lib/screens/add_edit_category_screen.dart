@@ -30,7 +30,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
   static const Color _primaryRoyalBlue = Color(0xFF1565C0);
   static const Color _bg = Color(0xFFF5F7FA);
   static const Color _textDark = Color(0xFF102A43);
-  static const Color _textSecondary = Color(0xFF627D98);
+  static const Color _textSecondary = Color.fromARGB(255, 111, 150, 189);
 
   bool get _isEditing => widget.categoryToEdit != null;
 

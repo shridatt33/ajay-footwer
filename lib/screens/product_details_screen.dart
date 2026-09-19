@@ -3,12 +3,39 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/product.dart';
 import '../services/local_product_repository.dart';
+import '../services/qr_generator.dart';
 import 'add_product_screen.dart';
 
 class ProductDetailsScreen extends StatelessWidget {
   const ProductDetailsScreen({super.key, required this.product});
 
   final Product product;
+
+  Future<void> _downloadQrToGallery(BuildContext context) async {
+    try {
+      const qrGenerator = QrGeneratorService();
+      await qrGenerator.saveQrCodeToGallery(
+        qrData: product.qrData,
+        productId: product.productId,
+      );
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('QR Code saved to Gallery')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        final errorMessage = e.toString().replaceAll('Exception: ', '');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save QR code: $errorMessage'),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
+  }
 
   Future<void> _editProduct(BuildContext context) async {
     final updated = await Navigator.of(context).push<Product>(
@@ -203,6 +230,12 @@ class ProductDetailsScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+              ),
+              const SizedBox(height: 20),
+              OutlinedButton.icon(
+                onPressed: () => _downloadQrToGallery(context),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('Download QR'),
               ),
               const SizedBox(height: 20),
               Row(
