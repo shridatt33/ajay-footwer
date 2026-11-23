@@ -47,6 +47,7 @@ class Database:
     def _create_indexes(cls):
         try:
             cls.db.products.create_index("productId", unique=True)
+            cls.db.products.create_index("barcode", unique=True, sparse=True)
             cls.db.customers.create_index("customerId", unique=True)
             cls.db.bills.create_index("invoiceNo", unique=True)
             cls.db.users.create_index("email", unique=True, sparse=True)

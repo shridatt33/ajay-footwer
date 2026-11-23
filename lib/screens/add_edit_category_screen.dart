@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/category.dart';
 import '../services/category_repository.dart';
 
@@ -67,7 +65,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white),
         ),
         backgroundColor: isError ? Colors.red.shade700 : _primaryRoyalBlue,
         behavior: SnackBarBehavior.floating,
@@ -138,7 +136,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
         ),
         title: Text(
           titleText,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 18, fontWeight: FontWeight.w600, color: _textDark),
         ),
         actions: [
@@ -156,7 +154,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                     onPressed: _save,
                     child: Text(
                       'Save',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 15,
                           fontWeight: FontWeight.w600,
                           color: _primaryRoyalBlue),
@@ -235,14 +233,14 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                           controller: _nameController,
                           textInputAction: TextInputAction.next,
                           textCapitalization: TextCapitalization.words,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 14, color: _textDark),
                           decoration: InputDecoration(
                             labelText: 'Category Name *',
                             hintText: 'e.g. Men\'s Casual, Kids Sports',
                             prefixIcon: const Icon(Icons.category_outlined),
                             labelStyle:
-                                GoogleFonts.poppins(color: _textSecondary),
+                                TextStyle(fontFamily: 'Poppins', color: _textSecondary),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(14),
                             ),
@@ -270,7 +268,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                               children: [
                                 Text(
                                   'Select Sizes *',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
                                     color: _textDark,
@@ -279,7 +277,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                                 const SizedBox(height: 4),
                                 Text(
                                   'Choose which sizes are available for this category.',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 11,
                                     color: _textSecondary,
                                   ),
@@ -295,7 +293,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                                       selected: isSelected,
                                       label: Text(
                                         'Size $size',
-                                        style: GoogleFonts.poppins(
+                                        style: TextStyle(fontFamily: 'Poppins', 
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                         ),
@@ -316,7 +314,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     fieldState.errorText ?? '',
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(fontFamily: 'Poppins', 
                                       fontSize: 12,
                                       color:
                                           Theme.of(context).colorScheme.error,
@@ -355,7 +353,7 @@ class _AddEditCategoryScreenState extends State<AddEditCategoryScreen> {
                                   : (_isEditing
                                       ? 'Update Category'
                                       : 'Save Category'),
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                   fontWeight: FontWeight.w600),
                             ),
                           ),

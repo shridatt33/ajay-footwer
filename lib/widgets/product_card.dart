@@ -109,8 +109,8 @@ class ProductCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: onQrPressed,
-                    icon: const Icon(Icons.qr_code_rounded),
-                    label: const Text('QR Code'),
+                    icon: const Icon(Icons.barcode_reader),
+                    label: const Text('Barcode'),
                   ),
                 ),
                 const SizedBox(width: 10),

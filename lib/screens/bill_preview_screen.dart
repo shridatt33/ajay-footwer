@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/billing_cart_item.dart';
 import '../models/customer.dart';
 import '../services/bill_pdf_service.dart';
@@ -123,7 +121,7 @@ class _BillPreviewScreenState extends State<BillPreviewScreen> {
         foregroundColor: Colors.white,
         title: Text(
           'बिल पूर्वावलोकन',
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 17,
             fontWeight: FontWeight.w600,
             color: Colors.white,
@@ -325,7 +323,7 @@ class _BillPreviewScreenState extends State<BillPreviewScreen> {
               icon: const Icon(Icons.print_rounded, size: 20),
               label: Text(
                 'Print / Download',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 15,
                   fontWeight: FontWeight.w600,
                 ),

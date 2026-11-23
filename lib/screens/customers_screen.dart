@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/customer.dart';
 import '../services/local_customer_repository.dart';
+import '../theme/app_theme.dart';
 import 'add_edit_customer_screen.dart';
 import 'customer_details_screen.dart';
 
@@ -22,11 +21,6 @@ class _CustomersScreenState extends State<CustomersScreen> {
   final LocalCustomerRepository _repository = LocalCustomerRepository.instance;
   final TextEditingController _searchController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-
-  static const Color _primaryRoyalBlue = Color(0xFF1565C0);
-  static const Color _surfaceBg = Color(0xFFF5F7FA);
-  static const Color _textDark = Color(0xFF102A43);
-  static const Color _textSecondary = Color(0xFF627D98);
 
   @override
   void initState() {
@@ -48,11 +42,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
         ),
-        backgroundColor: isError ? Colors.red.shade700 : _primaryRoyalBlue,
+        backgroundColor: isError ? AppColors.error : AppColors.textPrimary,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: Duration(seconds: isError ? 4 : 2),
       ),
     );
@@ -69,9 +63,11 @@ class _CustomersScreenState extends State<CustomersScreen> {
       _showSnackBar('Added new customer "${result.name}"');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _scrollController.hasClients) {
-          _scrollController.animateTo(0,
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOut);
+          _scrollController.animateTo(
+            0,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          );
         }
       });
     }
@@ -106,45 +102,47 @@ class _CustomersScreenState extends State<CustomersScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: AppColors.errorLight,
                 shape: BoxShape.circle,
               ),
-              child: Icon(Icons.delete_outline_rounded,
-                  color: Colors.red.shade700, size: 24),
+              child: const Icon(
+                Icons.delete_outline_rounded,
+                color: AppColors.error,
+                size: 22,
+              ),
             ),
             const SizedBox(width: 12),
             Text(
               'Delete Customer',
-              style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600, color: _textDark),
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                color: AppColors.textPrimary,
+              ),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to delete "${customer.name}" (${customer.shopName})? This action cannot be undone.',
-          style: GoogleFonts.poppins(fontSize: 14, color: _textSecondary),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w500, color: _textSecondary),
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, color: AppColors.textSecondary),
             ),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFDC2626),
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             ),
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -174,95 +172,102 @@ class _CustomersScreenState extends State<CustomersScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _surfaceBg,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        elevation: 0.5,
+        elevation: 0,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          onPressed: () => Navigator.maybePop(context),
+        ),
         title: Text(
           widget.isSelectingCustomer ? 'Select Customer' : 'Customers',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: _textDark,
+            color: AppColors.textPrimary,
           ),
         ),
         actions: [
           if (!widget.isSelectingCustomer)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: IconButton(
-                onPressed: _openAddCustomerScreen,
-                icon: const Icon(Icons.add_rounded, color: _primaryRoyalBlue),
-                tooltip: 'Add Customer',
+            TextButton.icon(
+              onPressed: _openAddCustomerScreen,
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: Text(
+                'Add',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
             ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
       ),
       floatingActionButton: widget.isSelectingCustomer
           ? null
           : FloatingActionButton.extended(
               onPressed: _openAddCustomerScreen,
-              backgroundColor: _primaryRoyalBlue,
+              backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
-              icon: const Icon(Icons.person_add_rounded),
+              elevation: 3,
+              icon: const Icon(Icons.person_add_rounded, size: 20),
               label: Text(
                 'Add Customer',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
       body: SafeArea(
         child: Column(
           children: [
-            // Search bar
+            // ── Search Bar ───────────────────────────────────────────────
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-              child: TextField(
-                controller: _searchController,
-                onChanged: (_) => setState(() {}),
-                style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
-                decoration: InputDecoration(
-                  hintText: 'Search customer, shop or mobile...',
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                  ),
-                  prefixIcon: const Icon(Icons.search_rounded,
-                      color: _primaryRoyalBlue),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          onPressed: () {
-                            _searchController.clear();
-                            setState(() {});
-                          },
-                          icon: const Icon(Icons.close_rounded),
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide:
-                        const BorderSide(color: _primaryRoyalBlue, width: 1.8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              child: Container(
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: (_) => setState(() {}),
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textPrimary),
+                  decoration: InputDecoration(
+                    hintText: 'Search customer, shop or mobile...',
+                    hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textMuted),
+                    prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            onPressed: () {
+                              _searchController.clear();
+                              setState(() {});
+                            },
+                            icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textSecondary),
+                          )
+                        : null,
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
                   ),
                 ),
               ),
             ),
 
-            // List
+            // ── Customer List & Summary ──────────────────────────────────
             Expanded(
               child: ValueListenableBuilder<bool>(
                 valueListenable: _repository.isLoading,
                 builder: (context, isLoading, _) {
                   if (isLoading) {
                     return const Center(
-                      child: CircularProgressIndicator(),
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     );
                   }
 
@@ -286,52 +291,52 @@ class _CustomersScreenState extends State<CustomersScreen> {
                           }
 
                           if (filtered.isEmpty) {
-                            return _buildNoResultsState(
-                                _searchController.text);
+                            return _buildNoResultsState(_searchController.text);
                           }
 
                           return Column(
                             children: [
-                              // Summary strip
+                              // Compact Summary Row
                               Padding(
-                                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                                padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
                                 child: Row(
                                   children: [
                                     Text(
                                       'Total Customers: ${allCustomers.length}',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 13,
+                                      style: TextStyle(fontFamily: 'Poppins', 
+                                        fontSize: 12,
                                         fontWeight: FontWeight.w600,
-                                        color: _textSecondary,
+                                        color: AppColors.textSecondary,
                                       ),
                                     ),
                                     const Spacer(),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(
-                                          horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: Colors.green.shade50,
-                                        borderRadius: BorderRadius.circular(8),
+                                        color: AppColors.successLight,
+                                        borderRadius: BorderRadius.circular(12),
                                         border: Border.all(
-                                            color: Colors.green.shade300),
+                                          color: AppColors.success.withValues(alpha: 0.3),
+                                        ),
                                       ),
                                       child: Row(
+                                        mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Container(
-                                            width: 7,
-                                            height: 7,
-                                            decoration: BoxDecoration(
-                                              color: Colors.green.shade600,
+                                            width: 6,
+                                            height: 6,
+                                            decoration: const BoxDecoration(
+                                              color: AppColors.success,
                                               shape: BoxShape.circle,
                                             ),
                                           ),
                                           const SizedBox(width: 5),
                                           Text(
                                             'ERP Directory Active',
-                                            style: GoogleFonts.poppins(
+                                            style: TextStyle(fontFamily: 'Poppins', 
                                               fontSize: 10,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.green.shade700,
+                                              fontWeight: FontWeight.w700,
+                                              color: AppColors.success,
                                             ),
                                           ),
                                         ],
@@ -341,36 +346,30 @@ class _CustomersScreenState extends State<CustomersScreen> {
                                 ),
                               ),
 
-                              // Customer list
+                              // Customer Cards List
                               Expanded(
                                 child: RefreshIndicator(
+                                  color: AppColors.primary,
                                   onRefresh: _repository.fetchCustomers,
                                   child: ListView.separated(
                                     controller: _scrollController,
-                                    padding: const EdgeInsets.fromLTRB(
-                                        16, 4, 16, 100),
+                                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 90),
                                     itemCount: filtered.length,
-                                    separatorBuilder: (_, __) =>
-                                        const SizedBox(height: 10),
+                                    separatorBuilder: (context, index) => const SizedBox(height: 10),
                                     itemBuilder: (context, index) {
+                                      final customer = filtered[index];
                                       return _CustomerCard(
-                                        customer: filtered[index],
-                                        isSelectingCustomer:
-                                            widget.isSelectingCustomer,
+                                        customer: customer,
+                                        isSelectingCustomer: widget.isSelectingCustomer,
                                         onTap: () {
                                           if (widget.isSelectingCustomer) {
-                                            Navigator.of(context)
-                                                .pop(filtered[index]);
+                                            Navigator.of(context).pop(customer);
                                           } else {
-                                            _openCustomerDetailsScreen(
-                                                filtered[index]);
+                                            _openCustomerDetailsScreen(customer);
                                           }
                                         },
-                                        onEdit: () => _openEditCustomerScreen(
-                                            filtered[index]),
-                                        onDelete: () =>
-                                            _confirmDeleteCustomer(
-                                                filtered[index]),
+                                        onEdit: () => _openEditCustomerScreen(customer),
+                                        onDelete: () => _confirmDeleteCustomer(customer),
                                       );
                                     },
                                   ),
@@ -398,39 +397,43 @@ class _CustomersScreenState extends State<CustomersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.people_outline_rounded,
-                size: 64, color: Colors.grey.shade400),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.people_outline_rounded, size: 36, color: AppColors.primary),
+            ),
             const SizedBox(height: 16),
             Text(
-              'No customers found',
-              style: GoogleFonts.poppins(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: _textDark,
+              'No Customers Registered',
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 6),
             Text(
-              'Add your first customer to get started.',
+              'Add your wholesale footwear retailers to start billing.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, color: _textSecondary),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
             if (!widget.isSelectingCustomer)
-              ElevatedButton.icon(
+              FilledButton.icon(
                 onPressed: _openAddCustomerScreen,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _primaryRoyalBlue,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24, vertical: 12),
+                style: FilledButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                icon: const Icon(Icons.person_add_rounded),
+                icon: const Icon(Icons.person_add_rounded, size: 18),
                 label: Text(
-                  'Add Customer',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                  'Add First Customer',
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13),
                 ),
               ),
           ],
@@ -446,17 +449,29 @@ class _CustomersScreenState extends State<CustomersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.search_off_rounded,
-                size: 56, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'No results for "$query"',
-              style: GoogleFonts.poppins(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: _textDark,
+            Container(
+              width: 64,
+              height: 64,
+              decoration: const BoxDecoration(
+                color: Color(0xFFF1F5F9),
+                shape: BoxShape.circle,
               ),
+              child: const Icon(Icons.search_off_rounded, size: 30, color: AppColors.textSecondary),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'No Customers Match "$query"',
               textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Check name, shop name, or phone number.',
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
             ),
           ],
         ),
@@ -471,41 +486,42 @@ class _CustomersScreenState extends State<CustomersScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.wifi_off_rounded,
-                size: 56, color: Colors.red.shade300),
-            const SizedBox(height: 16),
+            Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.wifi_off_rounded, size: 30, color: AppColors.error),
+            ),
+            const SizedBox(height: 14),
             Text(
-              'Unable to load customers',
-              style: GoogleFonts.poppins(
+              'Unable to Load Customers',
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: _textDark,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               'Please check server connection.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
-                fontSize: 13,
-                color: _textSecondary,
-              ),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
+            const SizedBox(height: 20),
+            FilledButton.icon(
               onPressed: _repository.fetchCustomers,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryRoyalBlue,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24, vertical: 12),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              icon: const Icon(Icons.refresh_rounded),
+              icon: const Icon(Icons.refresh_rounded, size: 18),
               label: Text(
                 'Retry',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600, fontSize: 13),
               ),
             ),
           ],
@@ -515,7 +531,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
   }
 }
 
-// ── Customer Card ─────────────────────────────────────────────────────────────
+// ── Customer Card (Mobile-First, Shared POS Design) ─────────────────────────
 
 class _CustomerCard extends StatelessWidget {
   const _CustomerCard({
@@ -532,13 +548,9 @@ class _CustomerCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
-  static const Color _primaryRoyalBlue = Color(0xFF1565C0);
-  static const Color _textDark = Color(0xFF102A43);
-  static const Color _textSecondary = Color(0xFF627D98);
-
   String _getInitials(String name) {
     final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
+    if (parts.length >= 2 && parts[0].isNotEmpty && parts[1].isNotEmpty) {
       return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
     } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
       return parts[0][0].toUpperCase();
@@ -547,9 +559,7 @@ class _CustomerCard extends StatelessWidget {
   }
 
   String _formatAmount(double amount) {
-    return amount
-        .toStringAsFixed(0)
-        .replaceAllMapped(
+    return amount.toStringAsFixed(0).replaceAllMapped(
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (m) => '${m[1]},',
         );
@@ -559,128 +569,142 @@ class _CustomerCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasOutstanding = customer.outstandingBalance > 0;
 
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(18),
-      elevation: 1,
-      shadowColor: Colors.black12,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(18),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: _primaryRoyalBlue,
-                child: Text(
-                  _getInitials(customer.name),
-                  style: GoogleFonts.poppins(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // LEFT: Customer avatar with initials
+                CircleAvatar(
+                  radius: 22,
+                  backgroundColor: AppColors.primary,
+                  child: Text(
+                    _getInitials(customer.name),
+                    style: TextStyle(fontFamily: 'Poppins', 
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
+                const SizedBox(width: 12),
 
-              // Info
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customer.name,
-                      style: GoogleFonts.poppins(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: _textDark,
+                // CENTER: Name, Shop, Mobile, Due
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        customer.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        const Icon(Icons.storefront_rounded,
-                            size: 12, color: _primaryRoyalBlue),
-                        const SizedBox(width: 4),
-                        Expanded(
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.storefront_rounded, size: 12, color: AppColors.primary),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              customer.shopName.isNotEmpty ? customer.shopName : 'Independent Retailer',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          const Icon(Icons.phone_outlined, size: 12, color: AppColors.textSecondary),
+                          const SizedBox(width: 4),
+                          Text(
+                            customer.mobile,
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 11,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (hasOutstanding) ...[
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.warningLight,
+                            borderRadius: BorderRadius.circular(6),
+                            border: Border.all(color: AppColors.warning.withValues(alpha: 0.4), width: 0.8),
+                          ),
                           child: Text(
-                            customer.shopName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: _primaryRoyalBlue,
+                            'Due: ₹${_formatAmount(customer.outstandingBalance)}',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 10,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFB45309),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 2),
-                    Row(
-                      children: [
-                        Icon(Icons.phone_outlined,
-                            size: 11, color: Colors.grey.shade500),
-                        const SizedBox(width: 4),
-                        Text(
-                          customer.mobile,
-                          style: GoogleFonts.poppins(
-                            fontSize: 11.5,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (hasOutstanding) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: Colors.orange.shade50,
-                          borderRadius: BorderRadius.circular(6),
-                          border:
-                              Border.all(color: Colors.orange.shade300, width: 0.8),
-                        ),
-                        child: Text(
-                          'Due ₹${_formatAmount(customer.outstandingBalance)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.orange.shade800,
-                          ),
-                        ),
-                      ),
                     ],
-                  ],
+                  ),
                 ),
-              ),
 
-              // Actions
-              if (!isSelectingCustomer) ...[
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onEdit,
-                  icon: Icon(Icons.edit_rounded,
-                      size: 18, color: Colors.blueGrey.shade400),
-                  tooltip: 'Edit',
-                ),
-                IconButton(
-                  visualDensity: VisualDensity.compact,
-                  onPressed: onDelete,
-                  icon: Icon(Icons.delete_outline_rounded,
-                      size: 18, color: Colors.red.shade400),
-                  tooltip: 'Delete',
-                ),
-              ] else ...[
-                Icon(Icons.chevron_right_rounded,
-                    color: Colors.grey.shade400),
+                // RIGHT: Actions
+                if (isSelectingCustomer) ...[
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.chevron_right_rounded, size: 18, color: AppColors.primary),
+                  ),
+                ] else ...[
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                    tooltip: 'Edit Customer',
+                  ),
+                  IconButton(
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onDelete,
+                    icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                    tooltip: 'Delete Customer',
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/shop_profile.dart';
 import '../services/shop_profile_repository.dart';
+import '../theme/app_theme.dart';
+import 'barcode_studio_screen.dart';
 import 'billing_history_screen.dart';
 import 'categories_screen.dart';
 import 'printer_settings_screen.dart';
+import 'settings_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -17,11 +18,6 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _repo = ShopProfileRepository.instance;
 
-  static const Color _blue = Color(0xFF1565C0);
-  static const Color _bg = Color(0xFFF5F7FA);
-  static const Color _textDark = Color(0xFF102A43);
-  static const Color _textSub = Color(0xFF627D98);
-
   @override
   void initState() {
     super.initState();
@@ -31,13 +27,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _snack(String msg, {bool isError = false}) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).clearSnackBars();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(msg, style: GoogleFonts.poppins(fontSize: 13, color: Colors.white)),
-      backgroundColor: isError ? Colors.red.shade700 : _blue,
-      behavior: SnackBarBehavior.floating,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      duration: Duration(seconds: isError ? 4 : 2),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          msg,
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white, fontWeight: FontWeight.w500),
+        ),
+        backgroundColor: isError ? AppColors.error : AppColors.textPrimary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: Duration(seconds: isError ? 4 : 2),
+      ),
+    );
   }
 
   Future<void> _openEditForm(ShopProfile current) async {
@@ -45,7 +46,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       MaterialPageRoute(builder: (_) => EditBusinessProfileScreen(current: current)),
     );
     if (saved != null && mounted) {
-      _snack('Business profile saved successfully');
+      _snack('Business profile updated successfully');
     }
   }
 
@@ -54,32 +55,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Row(children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
-            child: Icon(Icons.logout_rounded, color: Colors.red.shade700, size: 24),
-          ),
-          const SizedBox(width: 12),
-          Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: _textDark)),
-        ]),
-        content: Text('Are you sure you want to logout from Swamidatta Agencies ERP?',
-            style: GoogleFonts.poppins(fontSize: 14, color: _textSub)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.errorLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.logout_rounded, color: AppColors.error, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Logout',
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontWeight: FontWeight.w700,
+                fontSize: 17,
+                color: AppColors.textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to sign out from Swamidatta Agencies ERP?',
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textSecondary),
+        ),
         actions: [
           TextButton(
-              onPressed: () => Navigator.of(ctx).pop(),
-              child: Text('Cancel', style: GoogleFonts.poppins(fontWeight: FontWeight.w500, color: _textSub))),
-          ElevatedButton(
-              onPressed: () {
-                Navigator.of(ctx).pop();
-                _snack('Logged out successfully');
-              },
-              style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFDC2626),
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
-              child: Text('Logout', style: GoogleFonts.poppins(fontWeight: FontWeight.w600))),
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(
+              'Cancel',
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _snack('Logged out successfully');
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.error,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: Text(
+              'Logout',
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
+            ),
+          ),
         ],
       ),
     );
@@ -88,107 +113,149 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        elevation: 0.5,
+        elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: _textDark),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: Text('Business Profile',
-            style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: _textDark)),
+        title: Text(
+          'Business Profile',
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         actions: [
           ValueListenableBuilder<ShopProfile>(
             valueListenable: _repo.profile,
-            builder: (_, profile, __) => IconButton(
-              icon: const Icon(Icons.edit_rounded, color: _blue),
-              tooltip: 'Edit Profile',
+            builder: (_, profile, _) => TextButton.icon(
               onPressed: () => _openEditForm(profile),
+              icon: const Icon(Icons.edit_outlined, size: 16),
+              label: Text(
+                'Edit',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: TextButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+              ),
             ),
           ),
-          const SizedBox(width: 4),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
       ),
       body: SafeArea(
         child: ValueListenableBuilder<bool>(
           valueListenable: _repo.isLoading,
-          builder: (_, isLoading, __) {
+          builder: (_, isLoading, _) {
             return ValueListenableBuilder<ShopProfile>(
               valueListenable: _repo.profile,
-              builder: (_, profile, __) {
-                return SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _HeaderCard(profile: profile, primaryColor: _blue, onEditTap: () => _openEditForm(profile)),
-                      const SizedBox(height: 16),
-                      _BusinessInfoCard(
-                        profile: profile,
-                        isLoading: isLoading,
-                        primaryColor: _blue,
-                        textDark: _textDark,
-                        textSub: _textSub,
-                        onEditTap: () => _openEditForm(profile),
-                      ),
-                      const SizedBox(height: 16),
-                      _SettingsCard(
-                        primaryColor: _blue,
-                        textDark: _textDark,
-                        textSub: _textSub,
-                        onTap: (title) {
-                          if (title == 'Categories') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) => const CategoriesScreen()),
-                            );
-                          } else if (title == 'Billing History') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                  builder: (_) =>
-                                      const BillingHistoryScreen()),
-                            );
-                          } else if (title == 'Shop Information') {
-                            _openEditForm(profile);
-                          } else if (title == 'Printer Settings') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => const PrinterSettingsScreen(),
-                              ),
-                            );
-                          } else if (title == 'Logout') {
-                            _showLogoutDialog();
-                          } else {
-                            _snack('$title coming soon');
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 24),
-                      SizedBox(
-                        height: 54,
-                        child: ElevatedButton.icon(
-                          onPressed: _showLogoutDialog,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFDC2626),
-                            foregroundColor: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                          ),
-                          icon: const Icon(Icons.logout_rounded, size: 22),
-                          label: Text('Logout from Account',
-                              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+              builder: (_, profile, _) {
+                return RefreshIndicator(
+                  color: AppColors.primary,
+                  onRefresh: _repo.fetchProfile,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 80),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // 1. Business Profile Header Card
+                        _HeaderCard(
+                          profile: profile,
+                          onEditTap: () => _openEditForm(profile),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Center(
-                        child: Text('Swamidatta ERP v2.4.0 • Wholesale Footwear Edition',
-                            style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600)),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
+                        const SizedBox(height: 14),
+
+                        // 2. Business Information Card
+                        _BusinessInfoCard(
+                          profile: profile,
+                          isLoading: isLoading,
+                          onEditTap: () => _openEditForm(profile),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // 3. Settings & Options Card
+                        _SettingsCard(
+                          onTap: (destination) {
+                            switch (destination) {
+                              case 'Categories':
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const CategoriesScreen()),
+                                );
+                                break;
+                              case 'Barcode Studio':
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const BarcodeStudioScreen()),
+                                );
+                                break;
+                              case 'Billing History':
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const BillingHistoryScreen()),
+                                );
+                                break;
+                              case 'Printer Settings':
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const PrinterSettingsScreen()),
+                                );
+                                break;
+                              case 'System Settings':
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                                );
+                                break;
+                              case 'Shop Information':
+                                _openEditForm(profile);
+                                break;
+                              default:
+                                _snack('$destination setting is up-to-date');
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 20),
+
+                        // 4. Logout Action Button
+                        OutlinedButton.icon(
+                          onPressed: _showLogoutDialog,
+                          icon: const Icon(Icons.logout_rounded, size: 18),
+                          label: Text(
+                            'Sign Out of Account',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: AppColors.error,
+                            side: BorderSide(color: AppColors.error.withValues(alpha: 0.4)),
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
+                        ),
+                        const SizedBox(height: 14),
+
+                        // App Version Footer
+                        Center(
+                          child: Text(
+                            'Swamidatta ERP v2.5.0 • Wholesale Footwear Edition',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 11,
+                              color: AppColors.textMuted,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               },
@@ -200,50 +267,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Header card ────────────────────────────────────────────────────────────────
+// ── 1. Compact Header Card ───────────────────────────────────────────────────
 
 class _HeaderCard extends StatelessWidget {
-  final ShopProfile profile;
-  final Color primaryColor;
-  final VoidCallback onEditTap;
+  const _HeaderCard({
+    required this.profile,
+    required this.onEditTap,
+  });
 
-  const _HeaderCard({required this.profile, required this.primaryColor, required this.onEditTap});
+  final ShopProfile profile;
+  final VoidCallback onEditTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: primaryColor.withAlpha(12), blurRadius: 16, offset: const Offset(0, 4))],
-      ),
+      padding: const EdgeInsets.all(18),
+      decoration: AppDecorations.card(),
       child: Column(
         children: [
+          // Logo with change camera badge
           Stack(
             alignment: Alignment.bottomRight,
             children: [
               Container(
-                padding: const EdgeInsets.all(4),
+                width: 78,
+                height: 78,
                 decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
                   shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                      colors: [primaryColor, primaryColor.withAlpha(150)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight),
+                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.2), width: 2),
                 ),
-                child: CircleAvatar(
-                  radius: 46,
-                  backgroundColor: const Color(0xFFE8F1FB),
+                child: Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.roller_skating_rounded, size: 38, color: primaryColor),
-                      const SizedBox(height: 2),
-                      Text('SA',
-                          style: GoogleFonts.poppins(
-                              fontSize: 13, fontWeight: FontWeight.w700, color: primaryColor, letterSpacing: 1.0)),
+                      const Icon(Icons.storefront_rounded, size: 30, color: AppColors.primary),
+                      Text(
+                        'SA',
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -252,40 +319,64 @@ class _HeaderCard extends StatelessWidget {
                 onTap: onEditTap,
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
-                  padding: const EdgeInsets.all(7),
+                  padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: primaryColor,
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 2.5),
+                    border: Border.all(color: Colors.white, width: 2),
                   ),
-                  child: const Icon(Icons.camera_alt_rounded, size: 15, color: Colors.white),
+                  child: const Icon(Icons.camera_alt_rounded, size: 13, color: Colors.white),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 14),
-          Text(profile.shopName,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 21, fontWeight: FontWeight.w700, color: const Color(0xFF102A43))),
-          const SizedBox(height: 4),
-          Text('Wholesale Footwear Billing System',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500, color: const Color(0xFF627D98))),
           const SizedBox(height: 12),
+
+          // Business Name
+          Text(
+            profile.shopName,
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Poppins', 
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 2),
+
+          // Category Subtitle
+          Text(
+            'Wholesale Footwear Billing System',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontFamily: 'Poppins', 
+              fontSize: 12,
+              fontWeight: FontWeight.w400,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 10),
+
+          // Admin / Role Badge
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFFE8F1FB),
-              borderRadius: BorderRadius.circular(30),
-              border: Border.all(color: primaryColor.withAlpha(60)),
+              color: AppColors.primaryLight,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.verified_user_rounded, size: 16, color: primaryColor),
+                const Icon(Icons.verified_user_rounded, size: 14, color: AppColors.primary),
                 const SizedBox(width: 6),
-                Text('Admin',
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600, color: primaryColor)),
+                Text(
+                  'Verified Business • Admin',
+                  style: TextStyle(fontFamily: 'Poppins', 
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                  ),
+                ),
               ],
             ),
           ),
@@ -295,71 +386,122 @@ class _HeaderCard extends StatelessWidget {
   }
 }
 
-// ── Business Info Card ─────────────────────────────────────────────────────────
+// ── 2. Organized Business Information Card ───────────────────────────────────
 
 class _BusinessInfoCard extends StatelessWidget {
-  final ShopProfile profile;
-  final bool isLoading;
-  final Color primaryColor;
-  final Color textDark;
-  final Color textSub;
-  final VoidCallback onEditTap;
-
   const _BusinessInfoCard({
     required this.profile,
     required this.isLoading,
-    required this.primaryColor,
-    required this.textDark,
-    required this.textSub,
     required this.onEditTap,
   });
 
+  final ShopProfile profile;
+  final bool isLoading;
+  final VoidCallback onEditTap;
+
   @override
   Widget build(BuildContext context) {
+    final hasGst = profile.gstNumber.trim().isNotEmpty;
+
     return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 12, offset: const Offset(0, 3))],
-      ),
+      padding: const EdgeInsets.all(16),
+      decoration: AppDecorations.card(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Section Title Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(children: [
-                Icon(Icons.business_center_rounded, size: 20, color: primaryColor),
-                const SizedBox(width: 8),
-                Text('Business Information',
-                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: textDark)),
-              ]),
+              Row(
+                children: [
+                  Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.business_center_rounded, size: 18, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Business Information',
+                    style: TextStyle(fontFamily: 'Poppins', 
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
               InkWell(
                 onTap: onEditTap,
                 borderRadius: BorderRadius.circular(8),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Text('Edit',
-                      style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: primaryColor)),
+                  child: Text(
+                    'Edit',
+                    style: TextStyle(fontFamily: 'Poppins', 
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
+                  ),
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-          const SizedBox(height: 8),
+          const Divider(height: 1, color: AppColors.borderLight),
+          const SizedBox(height: 10),
+
           if (isLoading)
-            const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator()))
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.all(20),
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
           else ...[
-            _InfoRow(icon: Icons.store_rounded, label: 'Shop Name', value: profile.shopName, primaryColor: primaryColor, textDark: textDark),
-            _InfoRow(icon: Icons.person_outline_rounded, label: 'Owner Name', value: profile.ownerName, primaryColor: primaryColor, textDark: textDark),
-            _InfoRow(icon: Icons.phone_outlined, label: 'Mobile Number', value: profile.mobile, primaryColor: primaryColor, textDark: textDark),
-            _InfoRow(icon: Icons.email_outlined, label: 'Email Address', value: profile.email, primaryColor: primaryColor, textDark: textDark),
-            _InfoRow(icon: Icons.receipt_long_outlined, label: 'GST Number', value: profile.gstNumber, primaryColor: primaryColor, textDark: textDark, badgeText: profile.gstNumber.isNotEmpty ? 'VERIFIED' : null),
-            _InfoRow(icon: Icons.location_on_outlined, label: 'Shop Address', value: profile.address, primaryColor: primaryColor, textDark: textDark),
-            _InfoRow(icon: Icons.access_time_outlined, label: 'Business Hours', value: profile.businessHours, primaryColor: primaryColor, textDark: textDark, isLast: true),
+            _InfoRow(
+              icon: Icons.store_rounded,
+              label: 'Shop Name',
+              value: profile.shopName,
+            ),
+            _InfoRow(
+              icon: Icons.person_outline_rounded,
+              label: 'Owner Name',
+              value: profile.ownerName,
+            ),
+            _InfoRow(
+              icon: Icons.phone_outlined,
+              label: 'Mobile Number',
+              value: profile.mobile,
+            ),
+            _InfoRow(
+              icon: Icons.email_outlined,
+              label: 'Email Address',
+              value: profile.email.isNotEmpty ? profile.email : 'Not set',
+            ),
+            _InfoRow(
+              icon: Icons.receipt_long_outlined,
+              label: 'GST Number',
+              value: hasGst ? profile.gstNumber : 'Unregistered',
+              badgeText: hasGst ? 'GST REGISTERED' : null,
+            ),
+            _InfoRow(
+              icon: Icons.location_on_outlined,
+              label: 'Shop Address',
+              value: profile.address,
+              isMultiline: true,
+            ),
+            _InfoRow(
+              icon: Icons.access_time_outlined,
+              label: 'Business Hours',
+              value: profile.businessHours,
+              isLast: true,
+            ),
           ],
         ],
       ),
@@ -368,52 +510,82 @@ class _BusinessInfoCard extends StatelessWidget {
 }
 
 class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.badgeText,
+    this.isMultiline = false,
+    this.isLast = false,
+  });
+
   final IconData icon;
   final String label;
   final String value;
-  final Color primaryColor;
-  final Color textDark;
   final String? badgeText;
+  final bool isMultiline;
   final bool isLast;
-
-  const _InfoRow({
-    required this.icon, required this.label, required this.value,
-    required this.primaryColor, required this.textDark,
-    this.badgeText, this.isLast = false,
-  });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.only(bottom: isLast ? 0 : 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: isMultiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(7),
-            decoration: BoxDecoration(color: const Color(0xFFF0F4F8), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, size: 17, color: primaryColor),
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 16, color: AppColors.primary),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: GoogleFonts.poppins(fontSize: 11, fontWeight: FontWeight.w500, color: const Color(0xFF829AB1))),
+                Text(
+                  label,
+                  style: TextStyle(fontFamily: 'Poppins', 
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
                 const SizedBox(height: 1),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Expanded(child: Text(value, style: GoogleFonts.poppins(fontSize: 13.5, fontWeight: FontWeight.w600, color: textDark))),
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ),
                     if (badgeText != null) ...[
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade50,
+                          color: AppColors.successLight,
                           borderRadius: BorderRadius.circular(4),
-                          border: Border.all(color: Colors.green.shade300, width: 0.8),
+                          border: Border.all(color: AppColors.success.withValues(alpha: 0.4), width: 0.8),
                         ),
-                        child: Text(badgeText!, style: GoogleFonts.poppins(fontSize: 9, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
+                        child: Text(
+                          badgeText!,
+                          style: TextStyle(fontFamily: 'Poppins', 
+                            fontSize: 9,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.success,
+                          ),
+                        ),
                       ),
                     ],
                   ],
@@ -427,48 +599,106 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-// ── Settings Card ──────────────────────────────────────────────────────────────
+// ── 3. Clean Settings & Options Card ─────────────────────────────────────────
 
 class _SettingsCard extends StatelessWidget {
-  final Color primaryColor;
-  final Color textDark;
-  final Color textSub;
-  final Function(String) onTap;
+  const _SettingsCard({required this.onTap});
 
-  const _SettingsCard({required this.primaryColor, required this.textDark, required this.textSub, required this.onTap});
+  final void Function(String destination) onTap;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 12, offset: const Offset(0, 3))],
-      ),
+      decoration: AppDecorations.card(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
-            child: Row(children: [
-              Icon(Icons.tune_rounded, size: 20, color: primaryColor),
-              const SizedBox(width: 8),
-              Text('Settings & Options', style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: textDark)),
-            ]),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.tune_rounded, size: 18, color: AppColors.primary),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Settings & Options',
+                  style: TextStyle(fontFamily: 'Poppins', 
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+              ],
+            ),
           ),
-          const Divider(height: 1, color: Color(0xFFEEEEEE)),
-          _SettingsTile(icon: Icons.category_rounded, iconBg: const Color(0xFFFFF9C4), iconColor: const Color(0xFFF57F17), title: 'Categories', subtitle: 'Manage product categories & sizes', textDark: textDark, textSub: textSub, onTap: () => onTap('Categories')),
-          const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-          _SettingsTile(icon: Icons.receipt_long_rounded, iconBg: const Color(0xFFE8F5E9), iconColor: const Color(0xFF2E7D32), title: 'Billing History', subtitle: 'View & download all generated bills', textDark: textDark, textSub: textSub, onTap: () => onTap('Billing History')),
-          const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-          _SettingsTile(icon: Icons.storefront_rounded, iconBg: const Color(0xFFE8F1FB), iconColor: primaryColor, title: 'Shop Information', subtitle: 'Address, GST, logo & contact info', textDark: textDark, textSub: textSub, onTap: () => onTap('Shop Information')),
-          const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-          _SettingsTile(icon: Icons.person_outline_rounded, iconBg: const Color(0xFFEAF5EA), iconColor: const Color(0xFF2E7D32), title: 'User Profile', subtitle: 'Edit admin credentials & role', textDark: textDark, textSub: textSub, onTap: () => onTap('User Profile')),
-          const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-          _SettingsTile(icon: Icons.print_rounded, iconBg: const Color(0xFFF3E5F5), iconColor: const Color(0xFF7B1FA2), title: 'Printer Settings', subtitle: 'Configure thermal & Bluetooth printer', textDark: textDark, textSub: textSub, onTap: () => onTap('Printer Settings')),
-          const Divider(height: 1, indent: 64, color: Color(0xFFF0F0F0)),
-          _SettingsTile(icon: Icons.cloud_sync_rounded, iconBg: const Color(0xFFE0F7FA), iconColor: const Color(0xFF00838F), title: 'Backup & Restore', subtitle: 'Database auto-backup & cloud export', textDark: textDark, textSub: textSub, onTap: () => onTap('Backup & Restore'), isLast: true),
+          const Divider(height: 1, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.category_rounded,
+            iconBg: const Color(0xFFFFFBEB),
+            iconColor: const Color(0xFFD97706),
+            title: 'Categories',
+            subtitle: 'Manage product categories & footwear sizes',
+            onTap: () => onTap('Categories'),
+          ),
+          const Divider(height: 1, indent: 60, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.barcode_reader,
+            iconBg: const Color(0xFFEFF6FF),
+            iconColor: AppColors.primary,
+            title: 'Barcode Studio',
+            subtitle: 'Print Code 128 stickers and A4 sheets',
+            onTap: () => onTap('Barcode Studio'),
+          ),
+          const Divider(height: 1, indent: 60, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.receipt_long_rounded,
+            iconBg: const Color(0xFFECFDF5),
+            iconColor: const Color(0xFF059669),
+            title: 'Billing History',
+            subtitle: 'View and download generated invoices',
+            onTap: () => onTap('Billing History'),
+          ),
+          const Divider(height: 1, indent: 60, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.print_rounded,
+            iconBg: const Color(0xFFF5F3FF),
+            iconColor: const Color(0xFF7C3AED),
+            title: 'Printer Settings',
+            subtitle: 'Configure thermal & Bluetooth printer',
+            onTap: () => onTap('Printer Settings'),
+          ),
+          const Divider(height: 1, indent: 60, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.settings_rounded,
+            iconBg: const Color(0xFFF3F4F6),
+            iconColor: const Color(0xFF4B5563),
+            title: 'System Preferences',
+            subtitle: 'Barcode scan sounds, haptic & auto-print',
+            onTap: () => onTap('System Settings'),
+          ),
+          const Divider(height: 1, indent: 60, color: AppColors.borderLight),
+
+          _SettingsTile(
+            icon: Icons.storefront_rounded,
+            iconBg: const Color(0xFFEFF6FF),
+            iconColor: AppColors.primary,
+            title: 'Shop Information',
+            subtitle: 'Address, GST, logo & contact info',
+            onTap: () => onTap('Shop Information'),
+            isLast: true,
+          ),
         ],
       ),
     );
@@ -476,46 +706,68 @@ class _SettingsCard extends StatelessWidget {
 }
 
 class _SettingsTile extends StatelessWidget {
+  const _SettingsTile({
+    required this.icon,
+    required this.iconBg,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.isLast = false,
+  });
+
   final IconData icon;
   final Color iconBg;
   final Color iconColor;
   final String title;
   final String subtitle;
-  final Color textDark;
-  final Color textSub;
   final VoidCallback onTap;
   final bool isLast;
-
-  const _SettingsTile({
-    required this.icon, required this.iconBg, required this.iconColor,
-    required this.title, required this.subtitle,
-    required this.textDark, required this.textSub,
-    required this.onTap, this.isLast = false,
-  });
 
   @override
   Widget build(BuildContext context) {
     return ListTile(
       onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: Container(
-        width: 42, height: 42,
-        decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
-        child: Icon(icon, color: iconColor, size: 22),
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: iconBg,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Icon(icon, color: iconColor, size: 20),
       ),
-      title: Text(title, style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: textDark)),
-      subtitle: Text(subtitle, style: GoogleFonts.poppins(fontSize: 12, color: textSub)),
-      trailing: const Icon(Icons.chevron_right_rounded, color: Color(0xFF829AB1)),
+      title: Text(
+        title,
+        style: TextStyle(fontFamily: 'Poppins', 
+          fontSize: 13.5,
+          fontWeight: FontWeight.w600,
+          color: AppColors.textPrimary,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(fontFamily: 'Poppins', 
+          fontSize: 11,
+          color: AppColors.textSecondary,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        size: 20,
+        color: AppColors.textMuted,
+      ),
     );
   }
 }
 
-// ── Edit Business Profile Screen ───────────────────────────────────────────────
+// ── 4. Edit Business Profile Screen ──────────────────────────────────────────
 
 class EditBusinessProfileScreen extends StatefulWidget {
-  final ShopProfile current;
-
   const EditBusinessProfileScreen({super.key, required this.current});
+
+  final ShopProfile current;
 
   @override
   State<EditBusinessProfileScreen> createState() => _EditBusinessProfileScreenState();
@@ -532,10 +784,6 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   late final TextEditingController _hoursCtrl;
 
   bool _isSaving = false;
-
-  static const Color _blue = Color(0xFF1565C0);
-  static const Color _bg = Color(0xFFF5F7FA);
-  static const Color _textDark = Color(0xFF102A43);
 
   @override
   void initState() {
@@ -582,14 +830,18 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to save business information: $e',
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.white)),
-          backgroundColor: Colors.red.shade700,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          duration: const Duration(seconds: 5),
-        ));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Failed to save business details: $e',
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white),
+            ),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -599,159 +851,160 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _bg,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
         surfaceTintColor: Colors.transparent,
-        elevation: 0.5,
+        elevation: 0,
+        titleSpacing: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: _textDark),
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
           onPressed: () => Navigator.maybePop(context),
         ),
-        title: Text('Edit Business Profile',
-            style: GoogleFonts.poppins(
-                fontSize: 18, fontWeight: FontWeight.w600, color: _textDark)),
+        title: Text(
+          'Edit Business Profile',
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textPrimary,
+          ),
+        ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: _isSaving
                 ? const Center(
                     child: SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5),
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
                     ),
                   )
                 : TextButton(
                     onPressed: _save,
-                    child: Text('Save',
-                        style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: _blue)),
+                    child: Text(
+                      'Save',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primary,
+                      ),
+                    ),
                   ),
           ),
         ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.all(16),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _buildCard(children: [
-                  _buildField(
-                    ctrl: _shopNameCtrl,
-                    label: 'Shop Name *',
-                    hint: 'e.g. Swamidatta Agencies',
-                    icon: Icons.store_rounded,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Shop name is required' : null,
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: AppDecorations.card(),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildField(
+                        ctrl: _shopNameCtrl,
+                        label: 'Shop / Agency Name *',
+                        hint: 'e.g. Swamidatta Agencies',
+                        icon: Icons.store_rounded,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Shop name is required' : null,
+                      ),
+                      _buildField(
+                        ctrl: _ownerNameCtrl,
+                        label: 'Owner Name *',
+                        hint: 'e.g. Ajay Kumar',
+                        icon: Icons.person_outline_rounded,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Owner name is required' : null,
+                      ),
+                      _buildField(
+                        ctrl: _mobileCtrl,
+                        label: 'Mobile Number *',
+                        hint: 'e.g. +91 98765 43210',
+                        icon: Icons.phone_outlined,
+                        keyboardType: TextInputType.phone,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Mobile number is required' : null,
+                      ),
+                      _buildField(
+                        ctrl: _emailCtrl,
+                        label: 'Email Address',
+                        hint: 'e.g. contact@swamidatta.com',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                      ),
+                      _buildField(
+                        ctrl: _gstCtrl,
+                        label: 'GST Number',
+                        hint: 'e.g. 27AABCU9603R1ZM',
+                        icon: Icons.receipt_long_outlined,
+                        textCapitalization: TextCapitalization.characters,
+                      ),
+                      _buildField(
+                        ctrl: _addressCtrl,
+                        label: 'Shop Address *',
+                        hint: 'e.g. Plot No. 42, Footwear Market, Kolhapur',
+                        icon: Icons.location_on_outlined,
+                        maxLines: 2,
+                        validator: (v) =>
+                            v == null || v.trim().isEmpty ? 'Shop address is required' : null,
+                      ),
+                      _buildField(
+                        ctrl: _hoursCtrl,
+                        label: 'Business Hours',
+                        hint: 'e.g. Mon - Sat: 9:00 AM - 8:30 PM',
+                        icon: Icons.access_time_outlined,
+                        isLast: true,
+                      ),
+                    ],
                   ),
-                  _buildField(
-                    ctrl: _ownerNameCtrl,
-                    label: 'Owner Name *',
-                    hint: 'e.g. Ajay Kumar',
-                    icon: Icons.person_outline_rounded,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Owner name is required' : null,
-                  ),
-                  _buildField(
-                    ctrl: _mobileCtrl,
-                    label: 'Mobile Number *',
-                    hint: 'e.g. +91 98765 43210',
-                    icon: Icons.phone_outlined,
-                    keyboardType: TextInputType.phone,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Mobile number is required' : null,
-                  ),
-                  _buildField(
-                    ctrl: _emailCtrl,
-                    label: 'Email Address',
-                    hint: 'e.g. contact@swamidatta.com',
-                    icon: Icons.email_outlined,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  _buildField(
-                    ctrl: _gstCtrl,
-                    label: 'GST Number',
-                    hint: 'e.g. 27AABCU9603R1ZM',
-                    icon: Icons.receipt_long_outlined,
-                    textCapitalization: TextCapitalization.characters,
-                  ),
-                  _buildField(
-                    ctrl: _addressCtrl,
-                    label: 'Shop Address *',
-                    hint: 'e.g. Plot No. 42, Footwear Market, Kolhapur',
-                    icon: Icons.location_on_outlined,
-                    maxLines: 2,
-                    validator: (v) =>
-                        v == null || v.trim().isEmpty ? 'Shop address is required' : null,
-                  ),
-                  _buildField(
-                    ctrl: _hoursCtrl,
-                    label: 'Business Hours',
-                    hint: 'e.g. Mon - Sat: 9:00 AM - 8:30 PM',
-                    icon: Icons.access_time_outlined,
-                    isLast: true,
-                  ),
-                ]),
-                const SizedBox(height: 24),
+                ),
+                const SizedBox(height: 20),
+
+                // Save button
                 SizedBox(
-                  height: 52,
-                  child: ElevatedButton.icon(
+                  height: 50,
+                  child: FilledButton.icon(
                     onPressed: _isSaving ? null : _save,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _blue,
-                      foregroundColor: Colors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                     icon: _isSaving
                         ? const SizedBox(
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                color: Colors.white, strokeWidth: 2.5),
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : const Icon(Icons.save_rounded, size: 20),
+                        : const Icon(Icons.check_circle_outline_rounded, size: 20),
                     label: Text(
-                      _isSaving ? 'Saving...' : 'Save Business Profile',
-                      style: GoogleFonts.poppins(
-                          fontSize: 16, fontWeight: FontWeight.w600),
+                      _isSaving ? 'Saving Changes...' : 'Save Business Profile',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 24),
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildCard({required List<Widget> children}) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade200),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withAlpha(8),
-              blurRadius: 12,
-              offset: const Offset(0, 3))
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: children,
       ),
     );
   }
@@ -772,44 +1025,44 @@ class _EditBusinessProfileScreenState extends State<EditBusinessProfileScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: GoogleFonts.poppins(
-                  fontSize: 12.5,
-                  fontWeight: FontWeight.w500,
-                  color: _textDark)),
+          Text(
+            label,
+            style: TextStyle(fontFamily: 'Poppins', 
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
           const SizedBox(height: 6),
           TextFormField(
             controller: ctrl,
             keyboardType: keyboardType,
             textCapitalization: textCapitalization,
             maxLines: maxLines,
-            style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13.5, color: AppColors.textPrimary),
             validator: validator,
             decoration: InputDecoration(
               hintText: hint,
-              hintStyle:
-                  GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
-              prefixIcon: Icon(icon, size: 20, color: _blue),
+              hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textMuted),
+              prefixIcon: Icon(icon, size: 18, color: AppColors.primary),
               filled: true,
               fillColor: const Color(0xFFF8FAFC),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: Colors.grey.shade300),
+                borderSide: const BorderSide(color: AppColors.border),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: _blue, width: 1.8),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: Colors.redAccent),
+                borderSide: const BorderSide(color: AppColors.error),
               ),
               focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide:
-                    const BorderSide(color: Colors.redAccent, width: 1.8),
+                borderSide: const BorderSide(color: AppColors.error, width: 1.5),
               ),
             ),
           ),

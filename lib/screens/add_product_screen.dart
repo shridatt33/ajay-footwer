@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/category.dart';
 import '../models/product.dart';
+import '../services/barcode_service.dart';
 import '../services/category_repository.dart';
 import '../services/local_product_repository.dart';
-import '../services/qr_generator.dart';
+import '../widgets/barcode_dialog.dart';
 import '../widgets/product_form.dart';
-import '../widgets/qr_dialog.dart';
 
 class AddProductScreen extends StatefulWidget {
   const AddProductScreen({
@@ -27,7 +25,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   final TextEditingController _productNameController = TextEditingController();
   final TextEditingController _priceController = TextEditingController();
-  final QrGeneratorService _qrGeneratorService = const QrGeneratorService();
+  final BarcodeService _barcodeService = BarcodeService.instance;
   final Map<String, TextEditingController> _quantityControllers =
       <String, TextEditingController>{};
 
@@ -131,7 +129,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         SnackBar(
           content: Text(
             'Please select a category.',
-            style: GoogleFonts.poppins(color: Colors.white),
+            style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
           ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
@@ -147,7 +145,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         SnackBar(
           content: Text(
             'Select at least one size.',
-            style: GoogleFonts.poppins(color: Colors.white),
+            style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
           ),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
@@ -167,7 +165,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           SnackBar(
             content: Text(
               'Enter a valid quantity for size $size.',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
             ),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
@@ -186,10 +184,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
         sizeStock.values.fold<int>(0, (sum, value) => sum + value);
     final productId = _isEditing
         ? widget.productToEdit!.productId
-        : _qrGeneratorService.generateProductId(widget.nextSequence);
-    final qrData = _isEditing
-        ? widget.productToEdit!.qrData
-        : _qrGeneratorService.buildQrData(productId);
+        : _barcodeService.generateBarcode(widget.nextSequence);
+    final barcode = _isEditing
+        ? widget.productToEdit!.displayBarcode
+        : productId;
 
     final product = Product(
       productId: productId,
@@ -197,7 +195,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       sizeStock: sizeStock,
       price: price,
       quantity: quantity,
-      qrData: qrData,
+      barcode: barcode,
+      qrData: barcode,
       createdAt:
           _isEditing ? widget.productToEdit!.createdAt : DateTime.now(),
       categoryId: _selectedCategory?.id,
@@ -210,14 +209,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
     try {
       if (_isEditing) {
-        final updated =
-            await LocalProductRepository.instance.updateProduct(product);
+        await LocalProductRepository.instance.updateProduct(product);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Product updated successfully.',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
             ),
             backgroundColor: _primaryRoyalBlue,
             behavior: SnackBarBehavior.floating,
@@ -225,17 +223,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 borderRadius: BorderRadius.circular(10)),
           ),
         );
-        Navigator.of(context).pop(updated);
+        Navigator.of(context).pop(product);
       } else {
-        final saved =
-            await LocalProductRepository.instance.addProduct(product);
+        await LocalProductRepository.instance.addProduct(product);
         if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               'Product added successfully.',
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
             ),
             backgroundColor: _primaryRoyalBlue,
             behavior: SnackBarBehavior.floating,
@@ -247,28 +244,12 @@ class _AddProductScreenState extends State<AddProductScreen> {
         await showDialog<void>(
           context: context,
           builder: (context) {
-            return QrDialog(
-              productId: saved.productId,
-              productName: saved.productName,
-              qrData: saved.qrData,
-              onDownload: () async {
-                await _qrGeneratorService.saveQrImageToDocuments(
-                  qrData: saved.qrData,
-                  productId: saved.productId,
-                );
-              },
-              onPrint: () async {
-                await _qrGeneratorService.printQrCode(
-                  qrData: saved.qrData,
-                  productId: saved.productId,
-                );
-              },
-            );
+            return BarcodeDialog(product: product);
           },
         );
 
         if (mounted) {
-          Navigator.of(context).pop(saved);
+          Navigator.of(context).pop(product);
         }
       }
     } catch (e) {
@@ -278,7 +259,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           SnackBar(
             content: Text(
               errorMsg,
-              style: GoogleFonts.poppins(color: Colors.white),
+              style: TextStyle(fontFamily: 'Poppins', color: Colors.white),
             ),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
@@ -305,7 +286,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
     final titleText = _isEditing ? 'Edit Product' : 'Add Product';
     final subtitleText = _isEditing
         ? 'Update product details, pricing, and stock in the central inventory database.'
-        : 'Create inventory items for wholesale footwear and generate a QR code from the Product ID only.';
+        : 'Create inventory items for wholesale footwear with a unique Code 128 barcode.';
 
     return Scaffold(
       appBar: AppBar(
@@ -413,7 +394,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'How QR Codes Work',
+                      'How Barcodes Work',
                       style:
                           Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
@@ -421,7 +402,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Only the unique Product ID is stored in the QR code. Product name, size, price, and quantity stay in the local product object.',
+                      'Each product has a single unique Code 128 barcode covering all sizes. Easily scannable with USB, Bluetooth, or camera scanners in POS billing.',
                       style:
                           Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.black54,
@@ -461,7 +442,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
         children: [
           Text(
             'Category *',
-            style: GoogleFonts.poppins(
+            style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 13,
               fontWeight: FontWeight.w600,
               color: _textDark,
@@ -484,7 +465,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 Expanded(
                   child: Text(
                     'No categories found. Add categories from Profile > Settings > Categories.',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 12,
                       color: const Color(0xFF795548),
                     ),
@@ -498,25 +479,25 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
 
     return DropdownButtonFormField<ProductCategory>(
-      value: _selectedCategory,
+      initialValue: _selectedCategory,
       decoration: InputDecoration(
         labelText: 'Category *',
         prefixIcon: const Icon(Icons.category_outlined),
-        labelStyle: GoogleFonts.poppins(color: _textSecondary),
+        labelStyle: TextStyle(fontFamily: 'Poppins', color: _textSecondary),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
         ),
       ),
       hint: Text(
         'Select a category',
-        style: GoogleFonts.poppins(fontSize: 14, color: _textSecondary),
+        style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textSecondary),
       ),
       items: _categories.map((cat) {
         return DropdownMenuItem<ProductCategory>(
           value: cat,
           child: Text(
             cat.name,
-            style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textDark),
           ),
         );
       }).toList(),

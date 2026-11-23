@@ -38,23 +38,22 @@ class _BillingEditableRowState extends State<BillingEditableRow> {
   @override
   void didUpdateWidget(covariant BillingEditableRow oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // When the parent swaps in a new item (e.g. after a size-change key remap),
-    // sync local state with the incoming item values.
-    final newItem = widget.item;
-    final oldItem = oldWidget.item;
-
-    if (oldItem.product.productId != newItem.product.productId ||
-        oldItem.selectedSize != newItem.selectedSize) {
-      _selectedSize = newItem.selectedSize;
-      _quantity = newItem.quantity;
+    if (oldWidget.item.product.productId != widget.item.product.productId ||
+        oldWidget.item.selectedSize != widget.item.selectedSize) {
+      _selectedSize = widget.item.selectedSize;
+      _quantity = widget.item.quantity;
       _quantityError = null;
-      _priceController.text = _formatPrice(newItem.sellingPrice);
+      _priceController.text = _formatPrice(widget.item.sellingPrice);
       return;
     }
 
+    if (oldWidget.item.quantity != widget.item.quantity) {
+      _quantity = widget.item.quantity;
+      _quantityError = null;
+    }
+
     if (!_priceFocusNode.hasFocus) {
-      final formattedPrice = _formatPrice(newItem.sellingPrice);
+      final formattedPrice = _formatPrice(widget.item.sellingPrice);
       if (_priceController.text != formattedPrice) {
         _priceController.text = formattedPrice;
       }

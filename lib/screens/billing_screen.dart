@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/billing_cart_item.dart';
 import '../models/customer.dart';
 import '../models/product.dart';
@@ -9,10 +7,12 @@ import '../services/bill_service.dart';
 import '../services/local_customer_repository.dart';
 import '../services/local_product_repository.dart';
 import '../services/shop_profile_repository.dart';
-import '../widgets/billing_editable_row.dart';
+import '../theme/app_theme.dart';
 import '../widgets/billing_invoice_dialog.dart';
+import '../widgets/billing_product_group_card.dart';
+import '../widgets/multi_size_selection_sheet.dart';
+import 'barcode_scanner_screen.dart';
 import 'customers_screen.dart';
-import 'qr_scanner_screen.dart';
 
 class BillingScreen extends StatefulWidget {
   const BillingScreen({super.key});
@@ -22,27 +22,26 @@ class BillingScreen extends StatefulWidget {
 }
 
 class _BillingScreenState extends State<BillingScreen> {
-  final LocalProductRepository _productRepository = LocalProductRepository.instance;
-  final LocalCustomerRepository _customerRepository = LocalCustomerRepository.instance;
-
+  final LocalProductRepository _repository = LocalProductRepository.instance;
+  final LocalCustomerRepository _customerRepository =
+      LocalCustomerRepository.instance;
+  final ShopProfileRepository _shopProfileRepository =
+      ShopProfileRepository.instance;
   final TextEditingController _searchController = TextEditingController();
-  // Cart is keyed by "productId_size" so each product+size combo is a separate line.
   final Map<String, BillingCartItem> _cart = <String, BillingCartItem>{};
 
-  // ── Product selection panel state ──────────────────────────────────────────
-  // When a product is found via search/QR, it is held here so the user can
-  // pick multiple size-quantities before committing to the cart.
-  Product? _selectedProduct;
-  // Keyed by size string → draft quantity (0 means not selected).
-  final Map<String, int> _sizeQtyDraft = {};
-
   Customer? _selectedCustomer;
-  bool _isGeneratingInvoice = false; // prevents duplicate submission
+  bool _isGeneratingInvoice = false;
 
-  static const Color _primaryRoyalBlue = Color(0xFF1565C0);
-  static const Color _surfaceBg = Color(0xFFF5F7FA);
-  static const Color _textDark = Color(0xFF102A43);
-  static const Color _textSecondary = Color(0xFF627D98);
+  String _cartKey(String productId, String size) => '${productId}__$size';
+
+  @override
+  void initState() {
+    super.initState();
+    _repository.fetchProducts();
+    _customerRepository.fetchCustomers();
+    _shopProfileRepository.fetchProfile();
+  }
 
   @override
   void dispose() {
@@ -54,291 +53,230 @@ class _BillingScreenState extends State<BillingScreen> {
     return _cart.values.fold<double>(0, (sum, item) => sum + item.lineTotal);
   }
 
-  // ── product panel helpers ──────────────────────────────────────────────────
-
-  /// Opens the size-selection panel for [product].
-  /// Reuses existing draft quantities if the same product is already open.
-  void _openProductPanel(Product product) {
-    setState(() {
-      if (_selectedProduct?.productId != product.productId) {
-        _sizeQtyDraft.clear();
-        for (final size in product.sortedSizes) {
-          _sizeQtyDraft[size] = 0;
-        }
-      }
-      _selectedProduct = product;
-    });
+  int get _totalPairs {
+    return _cart.values.fold<int>(0, (sum, item) => sum + item.quantity);
   }
 
-  /// Dismisses the product panel without adding anything to the cart.
-  void _closeProductPanel() {
-    setState(() {
-      _selectedProduct = null;
-      _sizeQtyDraft.clear();
-    });
-    _searchController.clear();
-  }
-
-  /// Commits all draft sizes with qty > 0 into the cart as separate lines.
-  void _addDraftToCart() {
-    final product = _selectedProduct;
-    if (product == null) return;
-
-    final selected = _sizeQtyDraft.entries
-        .where((e) => e.value > 0)
-        .toList(growable: false);
-
-    if (selected.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Select at least one size with quantity > 0.',
-            style: GoogleFonts.poppins(fontSize: 13),
-          ),
-          backgroundColor: Colors.orange.shade700,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+  Map<String, List<BillingCartItem>> get _groupedCartItems {
+    final map = <String, List<BillingCartItem>>{};
+    for (final item in _cart.values) {
+      map.putIfAbsent(item.product.productId, () => <BillingCartItem>[]).add(item);
     }
-
-    setState(() {
-      for (final entry in selected) {
-        final size = entry.key;
-        final draftQty = entry.value;
-        final cartKey = '${product.productId}_$size';
-        final existing = _cart[cartKey];
-        if (existing != null) {
-          // Merge with existing line of same product+size.
-          final merged = existing.quantity + draftQty;
-          final capped = merged.clamp(1, existing.availableStock);
-          _cart[cartKey] = existing.copyWith(quantity: capped);
-        } else {
-          _cart[cartKey] = BillingCartItem(
-            product: product,
-            selectedSize: size,
-            quantity: draftQty,
-            sellingPrice: product.price,
-          );
-        }
-      }
-      _selectedProduct = null;
-      _sizeQtyDraft.clear();
-    });
-
-    _searchController.clear();
+    for (final list in map.values) {
+      list.sort((a, b) => (int.tryParse(a.selectedSize) ?? 0).compareTo(int.tryParse(b.selectedSize) ?? 0));
+    }
+    return map;
   }
 
-  Future<void> _openCustomerSelection() async {
-    final selected = await Navigator.of(context).push<Customer>(
-      MaterialPageRoute<Customer>(
-        builder: (_) => const CustomersScreen(isSelectingCustomer: true),
-      ),
-    );
+  // ── Hardware Barcode Scanner (USB / Bluetooth) ───────────────────────────
 
-    if (selected != null && mounted) {
-      setState(() {
-        _selectedCustomer = selected;
-      });
-      ScaffoldMessenger.of(context).clearSnackBars();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Selected Customer: ${selected.name} (${selected.shopName})',
-            style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
-          ),
-          backgroundColor: _primaryRoyalBlue,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-        ),
-      );
+  final StringBuffer _barcodeBuffer = StringBuffer();
+  DateTime _lastKeystrokeTime = DateTime.now();
+
+  void _handleHardwareKey(KeyEvent event) {
+    if (event is KeyDownEvent) {
+      final now = DateTime.now();
+      final diff = now.difference(_lastKeystrokeTime).inMilliseconds;
+      _lastKeystrokeTime = now;
+
+      if (event.logicalKey == LogicalKeyboardKey.enter) {
+        final code = _barcodeBuffer.toString().trim();
+        _barcodeBuffer.clear();
+        if (code.isNotEmpty) {
+          _addProductByBarcode(code);
+        }
+      } else {
+        if (diff > 180 && _barcodeBuffer.isNotEmpty) {
+          _barcodeBuffer.clear();
+        }
+        final char = event.character;
+        if (char != null && char.isNotEmpty && char.codeUnitAt(0) >= 32) {
+          _barcodeBuffer.write(char);
+        }
+      }
     }
   }
 
-  Future<void> _scanQr() async {
+  // ── Navigation & Actions ─────────────────────────────────────────────────
+
+  Future<void> _scanBarcode() async {
     final scannedValue = await Navigator.of(context).push<String>(
-      MaterialPageRoute<String>(builder: (_) => const QrScannerScreen()),
+      MaterialPageRoute<String>(builder: (_) => const BarcodeScannerScreen()),
     );
     if (scannedValue == null || scannedValue.trim().isEmpty) {
       return;
     }
 
-    await _addProductById(scannedValue.trim());
+    await _addProductByBarcode(scannedValue.trim());
   }
 
   Future<void> _searchProduct() async {
-    await _addProductById(_searchController.text.trim());
+    final query = _searchController.text.trim();
+    if (query.isNotEmpty) {
+      await _addProductByBarcode(query);
+    }
   }
 
-  Future<void> _addProductById(String productId) async {
-    if (productId.isEmpty) return;
+  Future<void> _selectCustomer() async {
+    final customer = await Navigator.of(context).push<Customer>(
+      MaterialPageRoute<Customer>(
+        builder: (_) => const CustomersScreen(isSelectingCustomer: true),
+      ),
+    );
 
-    final product = _productRepository.findByProductId(productId);
-    if (product == null) {
-      await _showMissingProductDialog(productId);
+    if (!mounted || customer == null) {
       return;
     }
 
-    if (product.sortedSizes.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${product.productName} has no available sizes.'),
-          ),
-        );
-      }
+    setState(() {
+      _selectedCustomer = customer;
+    });
+  }
+
+  void _clearCustomerSelection() {
+    setState(() {
+      _selectedCustomer = null;
+    });
+  }
+
+  Future<void> _addProductByBarcode(String barcodeOrCode) async {
+    final query = barcodeOrCode.trim();
+    if (query.isEmpty) return;
+
+    final product = _repository.findByBarcodeOrId(query);
+    if (product == null) {
+      await _showMissingProductDialog(query);
+      return;
+    }
+
+    if (product.quantity <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cannot add "${product.productName}". Product is out of stock.'),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       _searchController.clear();
       return;
     }
 
-    // Show the size-selection panel — do NOT add directly to cart.
-    _openProductPanel(product);
+    // Existing quantities of this product currently in the cart
+    final existingQuantities = <String, int>{};
+    for (final item in _cart.values) {
+      if (item.product.productId == product.productId) {
+        existingQuantities[item.selectedSize] = item.quantity;
+      }
+    }
+
+    final selectedSizesToAdd = await MultiSizeSelectionSheet.show(
+      context,
+      product: product,
+      existingCartQuantities: existingQuantities,
+    );
+
+    if (selectedSizesToAdd != null && selectedSizesToAdd.isNotEmpty && mounted) {
+      int totalAddedPairs = 0;
+      setState(() {
+        for (final entry in selectedSizesToAdd.entries) {
+          final size = entry.key;
+          final qty = entry.value;
+          final key = _cartKey(product.productId, size);
+          final existing = _cart[key];
+          final maxStock = product.sizeStock[size] ?? 0;
+
+          if (existing != null) {
+            final newQty = (existing.quantity + qty).clamp(1, maxStock);
+            _cart[key] = existing.copyWith(quantity: newQty);
+            totalAddedPairs += qty;
+          } else {
+            _cart[key] = BillingCartItem(
+              product: product,
+              selectedSize: size,
+              quantity: qty.clamp(1, maxStock),
+              sellingPrice: product.price,
+            );
+            totalAddedPairs += qty;
+          }
+        }
+      });
+
+      _searchController.clear();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Added $totalAddedPairs pair(s) across ${selectedSizesToAdd.length} size(s) for "${product.productName}".',
+            ),
+            duration: const Duration(milliseconds: 1500),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
   }
 
-  /// Called by [BillingEditableRow] whenever the user edits price, qty, or size.
-  ///
-  /// [oldKey] is the key that was in the cart BEFORE the edit.
-  /// [updatedItem] carries the new values (including the potentially-changed size).
-  void _updateCartItem(String oldKey, BillingCartItem updatedItem) {
-    final newKey = '${updatedItem.product.productId}_${updatedItem.selectedSize}';
+  void _handleQuantityChanged(BillingCartItem item, int newQty) {
+    final key = _cartKey(item.product.productId, item.selectedSize);
+    if (newQty <= 0) {
+      setState(() {
+        _cart.remove(key);
+      });
+      return;
+    }
 
+    final maxStock = item.availableStock;
+    final clamped = newQty.clamp(1, maxStock);
     setState(() {
-      if (newKey == oldKey) {
-        // Size did not change — just update in place.
-        _cart[newKey] = updatedItem;
-      } else {
-        // Size changed → remove old line, merge into or create new line.
-        _cart.remove(oldKey);
-        final existing = _cart[newKey];
-        if (existing != null) {
-          // Target size already has a line — merge quantities.
-          final mergedQty = existing.quantity + updatedItem.quantity;
-          final cappedQty = mergedQty.clamp(1, updatedItem.availableStock);
-          _cart[newKey] = existing.copyWith(quantity: cappedQty);
-        } else {
-          _cart[newKey] = updatedItem;
+      _cart[key] = item.copyWith(quantity: clamped);
+    });
+  }
+
+  void _handleRemoveItem(BillingCartItem item) {
+    final key = _cartKey(item.product.productId, item.selectedSize);
+    setState(() {
+      _cart.remove(key);
+    });
+  }
+
+  void _removeProduct(String productId) {
+    setState(() {
+      _cart.removeWhere((_, item) => item.product.productId == productId);
+    });
+  }
+
+  void _updateProductPrice(Product product, double newPrice) {
+    setState(() {
+      for (final key in _cart.keys.toList()) {
+        final item = _cart[key]!;
+        if (item.product.productId == product.productId) {
+          _cart[key] = item.copyWith(sellingPrice: newPrice);
         }
       }
     });
   }
 
-  Future<void> _showMissingProductDialog(String productId) async {
-    if (!mounted) {
-      return;
-    }
+  Future<void> _showMissingProductDialog(String barcodeOrId) async {
+    if (!mounted) return;
 
     await showDialog<void>(
       context: context,
       builder: (context) {
         return AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-          title: Text(
-            'Product Not Found',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, color: _textDark),
-          ),
-          content: Text(
-            'No local product exists for Product ID "$productId".',
-            style: GoogleFonts.poppins(fontSize: 14, color: _textSecondary),
-          ),
-          actions: [
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryRoyalBlue,
-                foregroundColor: Colors.white,
-              ),
-              child: Text('OK', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// Removes one specific cart line identified by its full key (productId_size).
-  void _removeItem(String cartKey) {
-    setState(() {
-      _cart.remove(cartKey);
-    });
-  }
-
-  void _clearBill() {
-    setState(() {
-      _cart.clear();
-    });
-  }
-
-  void _showNoCustomerAlert() {
-    showDialog<void>(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-          ),
-          title: Row(
+          title: const Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.orange.shade50,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  Icons.person_search_rounded,
-                  color: Colors.orange.shade800,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Customer Required',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                  color: _textDark,
-                ),
-              ),
+              Icon(Icons.error_outline_rounded, color: AppColors.error),
+              SizedBox(width: 8),
+              Text('Product Not Found'),
             ],
           ),
           content: Text(
-            'Please select a customer.',
-            style: GoogleFonts.poppins(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w500,
-              color: _textSecondary,
-            ),
+            'Unknown Barcode / SKU: "$barcodeOrId".\n\nNo product in inventory matches this code.',
           ),
           actions: [
-            TextButton(
+            FilledButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w500,
-                  color: _textSecondary,
-                ),
-              ),
-            ),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _openCustomerSelection();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _primaryRoyalBlue,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              icon: const Icon(Icons.person_add_rounded, size: 18),
-              label: Text(
-                'Select Customer Now',
-                style: GoogleFonts.poppins(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
+              child: const Text('OK'),
             ),
           ],
         );
@@ -346,653 +284,457 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  Future<void> _generateInvoice() async {
-    // Prevent duplicate submissions
-    if (_isGeneratingInvoice) return;
+  void _clearBill() {
+    if (_cart.isEmpty) return;
 
-    // Rule 1: customer required
-    if (_selectedCustomer == null) {
-      _showNoCustomerAlert();
-      return;
-    }
-
-    // Rule 2: cart must not be empty
-    if (_cart.isEmpty) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Add products to generate an invoice.',
-              style: GoogleFonts.poppins(fontSize: 13),
-            ),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
+    showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Clear Billing Cart?'),
+        content: const Text('Are you sure you want to remove all items from the current bill?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancel'),
           ),
-        );
-      }
-      return;
-    }
-
-    setState(() => _isGeneratingInvoice = true);
-
-    // Snapshot cart and customer now — these are frozen for this invoice.
-    final items = _cart.values.toList(growable: false);
-    final customer = _selectedCustomer!;
-    final priorOutstanding = customer.outstandingBalance;
-    final shopProfile = ShopProfileRepository.instance.current;
-
-    // ── Step 1: Save the bill to MongoDB (stock deduction happens server-side).
-    // We do this BEFORE showing the dialog so we have a real invoice number.
-    // The payment status is determined by the user inside the dialog.
-    // We use a neutral placeholder and update it once the user confirms.
-    try {
-      final savedBill = await BillService.instance.createBill(
-        customer: customer,
-        cartItems: items,
-        shopProfile: shopProfile,
-        // Placeholder — will be updated via onDone callback below.
-        paymentStatus: 'Pending',
-        priorOutstanding: priorOutstanding,
-      );
-
-      // Update local product stock cache to reflect server deduction.
-      await _productRepository.fetchProducts();
-
-      // Clear the cart now that the bill is saved.
-      if (mounted) {
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Clear All'),
+          ),
+        ],
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && mounted) {
         setState(() {
           _cart.clear();
-          _selectedCustomer = customer;
+          _searchController.clear();
         });
-        _searchController.clear();
+      }
+    });
+  }
+
+  Future<void> _generateInvoice() async {
+    if (_cart.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please add at least one product to generate an invoice.')),
+      );
+      return;
+    }
+
+    final selectedCustomer = _selectedCustomer;
+    if (selectedCustomer == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a customer before generating the invoice.')),
+      );
+      return;
+    }
+
+    if (_isGeneratingInvoice) {
+      return;
+    }
+
+    setState(() {
+      _isGeneratingInvoice = true;
+    });
+
+    final items = _cart.values.toList(growable: false);
+
+    try {
+      final bill = await BillService.instance.createBill(
+        customer: selectedCustomer,
+        cartItems: items,
+        shopProfile: _shopProfileRepository.current,
+        paymentStatus: 'Paid',
+        priorOutstanding: selectedCustomer.outstandingBalance,
+      );
+
+      _repository.consumeStockForInvoice(items);
+      await _repository.fetchProducts();
+      await _customerRepository.fetchCustomers();
+
+      if (!mounted) {
+        return;
       }
 
-      if (!mounted) return;
+      setState(() {
+        _cart.clear();
+        _searchController.clear();
+      });
 
-      // ── Step 2: Show the Invoice dialog. The user picks Paid / Add to A/C.
-      // The onDone callback fires only when Done is tapped with a valid choice.
+      final refreshed = _customerRepository.getCustomerById(selectedCustomer.id);
+      if (refreshed != null) {
+        _selectedCustomer = refreshed;
+      }
+
       await showDialog<void>(
         context: context,
-        barrierDismissible: false, // force explicit Done tap
-        builder: (dialogContext) {
-          return BillingInvoiceDialog(
-            customer: customer,
-            invoiceNumber: savedBill.invoiceNo,
-            invoiceDate: savedBill.displayDate,
-            invoiceCreatedAt: savedBill.createdAt,
-            items: items,
-            grandTotal: savedBill.grandTotal,
-            priorOutstanding: priorOutstanding,
-            onDone: (String chosenStatus) async {
-              // ── Step 3: Update customer history + outstanding based on choice.
-              final itemsSummary = items
-                  .map((i) => '${i.product.productName} (${i.quantity} pairs)')
-                  .join(', ');
-
-              // Only add to outstanding when the bill is on account.
-              final addToOutstanding = chosenStatus == 'Added to A/C';
-
-              await _customerRepository.addInvoiceToCustomer(
-                customerId: customer.id,
-                invoiceNumber: savedBill.invoiceNo,
-                date: savedBill.displayDate,
-                // Only add the amount to outstanding for Add to A/C bills.
-                amount: addToOutstanding ? savedBill.grandTotal : 0.0,
-                status: chosenStatus,
-                itemsSummary: itemsSummary,
-              );
-
-              // Refresh customer in memory to reflect new outstanding.
-              final updatedCustomer =
-                  _customerRepository.getCustomerById(customer.id);
-              if (mounted && updatedCustomer != null) {
-                setState(() => _selectedCustomer = updatedCustomer);
-              }
-            },
-          );
+        builder: (context) {
+          return BillingInvoiceDialog(bill: bill);
         },
       );
     } catch (e) {
-      // Bill save FAILED — cart was NOT cleared.
       if (mounted) {
-        final msg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Failed to save bill: $msg',
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
-            ),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            duration: const Duration(seconds: 6),
-          ),
+          SnackBar(content: Text(e.toString().replaceAll('Exception: ', ''))),
         );
       }
     } finally {
-      if (mounted) setState(() => _isGeneratingInvoice = false);
+      if (mounted) {
+        setState(() {
+          _isGeneratingInvoice = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final cartItems = _cart.values.toList(growable: false);
+    final grouped = _groupedCartItems;
+    final productIds = grouped.keys.toList();
 
     return Scaffold(
-      backgroundColor: _surfaceBg,
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: Colors.white,
+        elevation: 0,
         surfaceTintColor: Colors.transparent,
-        elevation: 0.5,
+        titleSpacing: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded, color: AppColors.textPrimary),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: Text(
-          'Billing Counter',
-          style: GoogleFonts.poppins(
-            fontSize: 20,
+          'POS Billing',
+          style: TextStyle(fontFamily: 'Poppins', 
+            fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: _textDark,
+            color: AppColors.textPrimary,
           ),
         ),
         actions: [
-          if (_selectedCustomer != null)
-            IconButton(
-              icon: const Icon(Icons.person_off_rounded, color: Colors.grey),
-              tooltip: 'Deselect Customer',
-              onPressed: () {
-                setState(() {
-                  _selectedCustomer = null;
-                });
-              },
-            ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // 1. Top Customer Selection / Selected Customer Card
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-              child: _selectedCustomer == null
-                  ? _buildSelectCustomerCard()
-                  : _buildSelectedCustomerCard(),
-            ),
-
-            // 2. Search Product ID Bar
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-              child: TextField(
-                controller: _searchController,
-                textInputAction: TextInputAction.search,
-                onSubmitted: (_) => _searchProduct(),
-                style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
-                decoration: InputDecoration(
-                  hintText: 'Search Product ID (e.g. SWA-000004)',
-                  hintStyle: GoogleFonts.poppins(
-                    fontSize: 13,
-                    color: Colors.grey.shade400,
-                  ),
-                  prefixIcon: const Icon(Icons.search_rounded, color: _primaryRoyalBlue),
-                  suffixIcon: IconButton(
-                    onPressed: _searchProduct,
-                    icon: const Icon(Icons.arrow_forward_rounded, color: _primaryRoyalBlue),
-                  ),
-                  filled: true,
-                  fillColor: Colors.white,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    borderSide: const BorderSide(color: _primaryRoyalBlue, width: 1.8),
-                  ),
-                ),
+          if (_cart.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.only(right: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
               ),
-            ),
-
-            // OR Divider
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    child: Text(
-                      'OR',
-                      style: GoogleFonts.poppins(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.grey.shade500,
-                      ),
+                  const Icon(Icons.shopping_bag_outlined, size: 14, color: AppColors.primary),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$_totalPairs pair${_totalPairs > 1 ? 's' : ''}',
+                    style: TextStyle(fontFamily: 'Poppins', 
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
                     ),
                   ),
-                  Expanded(child: Divider(color: Colors.grey.shade300)),
                 ],
               ),
             ),
+        ],
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(height: 1, color: AppColors.border),
+        ),
+      ),
+      body: SafeArea(
+        child: Focus(
+          autofocus: true,
+          onKeyEvent: (node, event) {
+            _handleHardwareKey(event);
+            return KeyEventResult.ignored;
+          },
+          child: Stack(
+            children: [
+              // ── Main Content Area ───────────────────────────────────────
+              Column(
+                children: [
+                  // 1. Compact Customer Selector
+                  _buildCustomerSection(),
 
-            // 3. Scan QR Button
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-              child: SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: FilledButton.icon(
-                  onPressed: _scanQr,
-                  icon: const Icon(Icons.qr_code_scanner_rounded, size: 20),
-                  label: Text(
-                    'Scan Product QR Code',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14.5,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  // 2. Barcode Search & Scan Row
+                  _buildSearchAndScanBar(),
+
+                  // 3. Cart Items List
+                  Expanded(
+                    child: productIds.isEmpty
+                        ? _buildEmptyCartView()
+                        : ListView.separated(
+                            padding: const EdgeInsets.fromLTRB(14, 8, 14, 110),
+                            itemCount: productIds.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final pid = productIds[index];
+                              final items = grouped[pid]!;
+                              final product = items.first.product;
+
+                              return BillingProductGroupCard(
+                                key: ValueKey<String>(pid),
+                                product: product,
+                                items: items,
+                                onQuantityChanged: _handleQuantityChanged,
+                                onRemoveItem: _handleRemoveItem,
+                                onRemoveProduct: (p) => _removeProduct(p.productId),
+                                onAddMoreSizes: (p) => _addProductByBarcode(p.productId),
+                                onPriceChanged: _updateProductPrice,
+                              );
+                            },
+                          ),
                   ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _primaryRoyalBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                ],
+              ),
+
+              // ── Sticky Bottom Billing Summary ───────────────────────────
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _buildStickySummaryBar(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Compact Customer Selection Card ──────────────────────────────────────
+
+  Widget _buildCustomerSection() {
+    final customer = _selectedCustomer;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(14, 10, 14, 6),
+      decoration: BoxDecoration(
+        color: customer == null ? Colors.white : AppColors.primaryLight.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: customer == null ? AppColors.border : AppColors.primary.withValues(alpha: 0.4),
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _selectCustomer,
+          borderRadius: BorderRadius.circular(14),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 17,
+                  backgroundColor: customer == null ? const Color(0xFFF1F5F9) : AppColors.primary,
+                  child: Icon(
+                    customer == null ? Icons.person_outline_rounded : Icons.person_rounded,
+                    color: customer == null ? AppColors.textSecondary : Colors.white,
+                    size: 18,
                   ),
                 ),
-              ),
-            ),
-
-            // 4. Product size-selection panel (shown when a product is found)
-            if (_selectedProduct != null)
-              _buildProductPanel(_selectedProduct!),
-
-            // 5. Cart List View
-            Expanded(
-              child: cartItems.isEmpty
-                  ? Center(
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+                const SizedBox(width: 12),
+                Expanded(
+                  child: customer == null
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(
-                              Icons.shopping_cart_outlined,
-                              size: 48,
-                              color: Colors.grey.shade400,
-                            ),
-                            const SizedBox(height: 10),
                             Text(
-                              'Billing Cart is Empty',
-                              style: GoogleFonts.poppins(
-                                fontSize: 16,
+                              'Select Customer / Retailer',
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: _textDark,
+                                color: AppColors.textPrimary,
                               ),
                             ),
-                            const SizedBox(height: 4),
                             Text(
-                              'Search a Product ID or scan a QR code to add items to bill.',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.poppins(
+                              'Required for invoice generation',
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 11,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              customer.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 13,
-                                color: _textSecondary,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textPrimary,
+                              ),
+                            ),
+                            Text(
+                              '${customer.mobile} ${customer.shopName.isNotEmpty ? '• ${customer.shopName}' : ''}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
-                      itemCount: cartItems.length,
-                      separatorBuilder: (context, _) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = cartItems[index];
-                        final cartKey = '${item.product.productId}_${item.selectedSize}';
-                        return BillingEditableRow(
-                          key: ValueKey<String>(cartKey),
-                          item: item,
-                          onChanged: (updatedItem) =>
-                              _updateCartItem(cartKey, updatedItem),
-                          onDelete: () => _removeItem(cartKey),
-                        );
-                      },
+                ),
+                if (customer != null)
+                  IconButton(
+                    onPressed: _clearCustomerSelection,
+                    icon: const Icon(Icons.close_rounded, size: 18, color: AppColors.textSecondary),
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'Change customer',
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryLight,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
                     ),
+                    child: Text(
+                      'Choose',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
 
-            // 5. Bottom Checkout Bar
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+  // ── Unified Search & Scan Bar ────────────────────────────────────────────
+
+  Widget _buildSearchAndScanBar() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(14, 4, 14, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 48,
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withAlpha(18),
-                    blurRadius: 18,
-                    offset: const Offset(0, -6),
-                  ),
-                ],
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Grand Total',
-                        style: GoogleFonts.poppins(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: _textDark,
-                        ),
-                      ),
-                      Text(
-                        '₹${_grandTotal.toStringAsFixed(_grandTotal % 1 == 0 ? 0 : 2)}',
-                        style: GoogleFonts.poppins(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
-                          color: _primaryRoyalBlue,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: SizedBox(
-                          height: 48,
-                          child: OutlinedButton(
-                            onPressed: _cart.isEmpty ? null : _clearBill,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFFDC2626),
-                              side: const BorderSide(color: Color(0xFFDC2626)),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            child: Text(
-                              'Clear Bill',
-                              style: GoogleFonts.poppins(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: SizedBox(
-                          height: 48,
-                          child: FilledButton.icon(
-                            onPressed: _isGeneratingInvoice ? null : _generateInvoice,
-                            style: FilledButton.styleFrom(
-                              backgroundColor: _primaryRoyalBlue,
-                              foregroundColor: Colors.white,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                            icon: _isGeneratingInvoice
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2.5,
-                                    ),
-                                  )
-                                : const Icon(Icons.receipt_long_rounded, size: 18),
-                            label: Text(
-                              _isGeneratingInvoice ? 'Saving...' : 'Generate Invoice',
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  /// Size-selection panel shown after a product is found via search or QR scan.
-  Widget _buildProductPanel(Product product) {
-    final sizes = product.sortedSizes;
-    final price = product.price;
-    final selectedCount = _sizeQtyDraft.values.where((q) => q > 0).length;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: _primaryRoyalBlue.withAlpha(60)),
-          boxShadow: [
-            BoxShadow(
-              color: _primaryRoyalBlue.withAlpha(12),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // ── Product header ───────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 12, 8, 0),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE8F1FB),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.hiking_rounded,
-                      color: Color(0xFF1565C0),
-                      size: 22,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          product.productName,
-                          style: GoogleFonts.poppins(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: _textDark,
-                          ),
-                        ),
-                        Text(
-                          '${product.productId}  •  ₹${price.toStringAsFixed(price % 1 == 0 ? 0 : 2)}',
-                          style: GoogleFonts.poppins(
-                            fontSize: 12,
-                            color: _textSecondary,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Close / dismiss panel
-                  IconButton(
-                    onPressed: _closeProductPanel,
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    color: Colors.grey.shade500,
-                    tooltip: 'Dismiss',
-                  ),
-                ],
-              ),
-            ),
-
-            const Divider(height: 16, indent: 14, endIndent: 14),
-
-            // ── Size rows ────────────────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Column(
-                children: sizes.map((size) {
-                  final stock = product.sizeStock[size] ?? 0;
-                  final qty = _sizeQtyDraft[size] ?? 0;
-                  final outOfStock = stock == 0;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Row(
-                      children: [
-                        // Size chip
-                        Container(
-                          width: 52,
-                          padding: const EdgeInsets.symmetric(
-                              vertical: 5, horizontal: 4),
-                          decoration: BoxDecoration(
-                            color: qty > 0
-                                ? _primaryRoyalBlue
-                                : const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'Sz $size',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color:
-                                  qty > 0 ? Colors.white : _textDark,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-
-                        // Stock label
-                        Expanded(
-                          child: Text(
-                            outOfStock
-                                ? 'Out of stock'
-                                : 'Stock: $stock',
-                            style: GoogleFonts.poppins(
-                              fontSize: 12,
-                              color: outOfStock
-                                  ? Colors.red.shade400
-                                  : _textSecondary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-
-                        // Qty stepper
-                        Container(
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF8FAFC),
-                            borderRadius: BorderRadius.circular(999),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  onPressed: outOfStock || qty <= 0
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            _sizeQtyDraft[size] = qty - 1;
-                                          });
-                                        },
-                                  icon: const Icon(Icons.remove_rounded,
-                                      size: 16),
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ),
-                              SizedBox(
-                                width: 30,
-                                child: Text(
-                                  qty.toString(),
-                                  textAlign: TextAlign.center,
-                                  style: GoogleFonts.poppins(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
-                                    color: _textDark,
-                                  ),
-                                ),
-                              ),
-                              SizedBox(
-                                width: 32,
-                                height: 32,
-                                child: IconButton(
-                                  onPressed: outOfStock || qty >= stock
-                                      ? null
-                                      : () {
-                                          setState(() {
-                                            _sizeQtyDraft[size] = qty + 1;
-                                          });
-                                        },
-                                  icon: const Icon(Icons.add_rounded,
-                                      size: 16),
-                                  padding: EdgeInsets.zero,
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(growable: false),
-              ),
-            ),
-
-            // ── Add to Bill button ───────────────────────────────────────────
-            Padding(
-              padding: const EdgeInsets.fromLTRB(14, 4, 14, 14),
-              child: SizedBox(
-                width: double.infinity,
-                height: 46,
-                child: FilledButton.icon(
-                  onPressed: selectedCount > 0 ? _addDraftToCart : null,
-                  icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-                  label: Text(
-                    selectedCount > 0
-                        ? 'Add $selectedCount Size${selectedCount > 1 ? 's' : ''} to Bill'
-                        : 'Select sizes above',
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: selectedCount > 0
-                        ? _primaryRoyalBlue
-                        : Colors.grey.shade300,
-                    foregroundColor: selectedCount > 0
-                        ? Colors.white
-                        : Colors.grey.shade500,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                  ),
+              child: TextField(
+                controller: _searchController,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _searchProduct(),
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  hintText: 'Scan or type barcode / SKU...',
+                  hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: AppColors.textMuted),
+                  prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textSecondary, size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18, color: AppColors.textSecondary),
+                          onPressed: () {
+                            _searchController.clear();
+                            setState(() {});
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                 ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          SizedBox(
+            height: 48,
+            child: FilledButton.icon(
+              onPressed: _scanBarcode,
+              icon: const Icon(Icons.barcode_reader, size: 20),
+              label: Text(
+                'Scan',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w700),
+              ),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── Empty Cart View ──────────────────────────────────────────────────────
+
+  Widget _buildEmptyCartView() {
+    return Center(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.point_of_sale_rounded,
+                size: 38,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No Products in Cart',
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Scan a product barcode or enter SKU\nto configure sizes and start billing.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontFamily: 'Poppins', 
+                fontSize: 12,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 20),
+            OutlinedButton.icon(
+              onPressed: _scanBarcode,
+              icon: const Icon(Icons.barcode_reader, size: 18),
+              label: Text(
+                'Open Barcode Scanner',
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
               ),
             ),
           ],
@@ -1001,230 +743,126 @@ class _BillingScreenState extends State<BillingScreen> {
     );
   }
 
-  /// Card displayed when NO customer is selected
-  Widget _buildSelectCustomerCard() {
+  // ── Fixed Sticky Bottom Billing Summary ──────────────────────────────────
+
+  Widget _buildStickySummaryBar() {
+    final canGenerate = _cart.isNotEmpty && _selectedCustomer != null && !_isGeneratingInvoice;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.orange.shade300, width: 1.2),
+        border: const Border(top: BorderSide(color: AppColors.border, width: 0.8)),
         boxShadow: [
           BoxShadow(
-            color: Colors.orange.withAlpha(15),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, -4),
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: _openCustomerSelection,
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Amount Row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.person_add_rounded,
-                    color: Colors.orange.shade800,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Select Customer',
-                        style: GoogleFonts.poppins(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: _textDark,
-                        ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Grand Total',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
                       ),
-                      Text(
-                        'Required before generating invoice',
-                        style: GoogleFonts.poppins(
-                          fontSize: 12,
-                          color: Colors.orange.shade900,
-                        ),
+                    ),
+                    Text(
+                      '$_totalPairs pair${_totalPairs != 1 ? 's' : ''} in cart',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.textMuted,
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                ElevatedButton.icon(
-                  onPressed: _openCustomerSelection,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _primaryRoyalBlue,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  icon: const Icon(Icons.people_alt_rounded, size: 16),
-                  label: Text(
-                    'Choose',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                    ),
+                Text(
+                  '₹${_grandTotal.toStringAsFixed(_grandTotal % 1 == 0 ? 0 : 2)}',
+                  style: TextStyle(fontFamily: 'Poppins', 
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primary,
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
+            const SizedBox(height: 10),
 
-  /// Card displayed when a customer IS selected
-  Widget _buildSelectedCustomerCard() {
-    final cust = _selectedCustomer!;
-
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFE8F1FB),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _primaryRoyalBlue.withAlpha(80), width: 1.2),
-        boxShadow: [
-          BoxShadow(
-            color: _primaryRoyalBlue.withAlpha(12),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          onTap: _openCustomerSelection,
-          borderRadius: BorderRadius.circular(18),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: Row(
+            // Buttons Row
+            Row(
               children: [
-                CircleAvatar(
-                  radius: 22,
-                  backgroundColor: _primaryRoyalBlue,
-                  child: Text(
-                    _getInitials(cust.name),
-                    style: GoogleFonts.poppins(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              cust.name,
-                              style: GoogleFonts.poppins(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                                color: _textDark,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.storefront_rounded,
-                            size: 13,
-                            color: _primaryRoyalBlue,
-                          ),
-                          const SizedBox(width: 4),
-                          Expanded(
-                            child: Text(
-                              cust.shopName,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.poppins(
-                                fontSize: 12.5,
-                                fontWeight: FontWeight.w600,
-                                color: _primaryRoyalBlue,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.phone_outlined,
-                            size: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            cust.mobile,
-                            style: GoogleFonts.poppins(
-                              fontSize: 11.5,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 6),
+                // Clear Cart
                 OutlinedButton(
-                  onPressed: _openCustomerSelection,
+                  onPressed: _cart.isEmpty ? null : _clearBill,
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: _primaryRoyalBlue,
-                    side: const BorderSide(color: _primaryRoyalBlue),
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    minimumSize: const Size(60, 32),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
+                    foregroundColor: AppColors.error,
+                    side: BorderSide(
+                      color: _cart.isEmpty ? Colors.grey.shade300 : AppColors.error.withValues(alpha: 0.4),
                     ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
                   ),
-                  child: Text(
-                    'Change',
-                    style: GoogleFonts.poppins(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                  child: const Icon(Icons.delete_sweep_outlined, size: 20),
+                ),
+                const SizedBox(width: 10),
+
+                // Primary Generate Invoice Button
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: canGenerate ? _generateInvoice : null,
+                    icon: _isGeneratingInvoice
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Icon(Icons.receipt_long_rounded, size: 20),
+                    label: Text(
+                      _isGeneratingInvoice
+                          ? 'Generating Bill...'
+                          : _selectedCustomer == null && _cart.isNotEmpty
+                              ? 'Select Customer to Bill'
+                              : 'Generate Invoice',
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      disabledBackgroundColor: Colors.grey.shade300,
+                      disabledForegroundColor: Colors.grey.shade500,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 13),
                     ),
                   ),
                 ),
               ],
             ),
-          ),
+          ],
         ),
       ),
     );
-  }
-
-  String _getInitials(String name) {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) {
-      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
-      return parts[0][0].toUpperCase();
-    }
-    return 'C';
   }
 }

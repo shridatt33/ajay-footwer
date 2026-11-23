@@ -13,8 +13,10 @@ void main() {
   testWidgets('dashboard renders key sections', (WidgetTester tester) async {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const SwamidattaAgenciesApp());
+    await tester.pump();
 
     expect(find.text('Swamidatta Agencies'), findsWidgets);
-    expect(find.text('Welcome, Admin 👋'), findsOneWidget);
+    expect(find.text('Wholesale Footwear Billing System'), findsWidgets);
+    expect(find.text('Business Overview'), findsOneWidget);
   });
 }

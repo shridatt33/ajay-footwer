@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/customer.dart';
 import '../services/local_customer_repository.dart';
 
@@ -112,7 +110,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
           SnackBar(
             content: Text(
               'Error: $e',
-              style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white),
             ),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
@@ -141,7 +139,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
         ),
         title: Text(
           _isEditing ? 'Edit Customer' : 'Add New Customer',
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 18,
             fontWeight: FontWeight.w600,
             color: _textDark,
@@ -184,7 +182,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                           const SizedBox(width: 8),
                           Text(
                             'Customer Information',
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 15,
                               fontWeight: FontWeight.w600,
                               color: _textDark,
@@ -323,7 +321,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
                       _isSaving
                           ? 'Saving...'
                           : (_isEditing ? 'Update Customer' : 'Save Customer'),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 0.3,
@@ -354,7 +352,7 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
       children: [
         Text(
           label,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 12.5,
             fontWeight: FontWeight.w500,
             color: _textDark,
@@ -366,11 +364,11 @@ class _AddEditCustomerScreenState extends State<AddEditCustomerScreen> {
           keyboardType: keyboardType,
           textCapitalization: textCapitalization,
           maxLines: maxLines,
-          style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textDark),
           validator: validator,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+            hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.grey.shade400),
             prefixIcon: Icon(icon, size: 20, color: _primaryRoyalBlue),
             filled: true,
             fillColor: const Color(0xFFF8FAFC),

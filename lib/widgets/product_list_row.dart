@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../models/product.dart';
+import '../theme/app_theme.dart';
 
 class ProductListRow extends StatelessWidget {
   const ProductListRow({
@@ -24,119 +24,146 @@ class ProductListRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final hasCategoryName =
-        product.categoryName != null && product.categoryName!.isNotEmpty;
-
-    return Material(
-      color: Theme.of(context).colorScheme.surface,
-      elevation: 1,
-      shadowColor: Colors.black.withValues(alpha: 0.06),
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE8F1FB),
-                  borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // ── LEFT: Product Icon Thumbnail ─────────────────────────
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryLight,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.inventory_2_rounded,
+                      color: AppColors.primary,
+                      size: 22,
+                    ),
+                  ),
                 ),
-                child: const Icon(
-                  Icons.hiking_rounded,
-                  color: Color(0xFF1565C0),
-                  size: 22,
+                const SizedBox(width: 12),
+
+                // ── CENTER: Name, SKU, Barcode, Stock ────────────────────
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        product.productName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        product.displayBarcode,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontFamily: 'monospace', 
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              '${product.quantity} in stock • ${product.sizeStock.length} sizes',
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 10,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(width: 8),
+
+                // ── RIGHT: Selling Price & Actions ───────────────────────
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      product.productName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
+                      _formatPrice(),
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primary,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      product.productId,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          onPressed: onQrPressed,
+                          tooltip: 'Barcode',
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          icon: const Icon(Icons.barcode_reader, size: 18, color: AppColors.primary),
+                        ),
+                        IconButton(
+                          onPressed: onEditPressed,
+                          tooltip: 'Edit',
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.textPrimary),
+                        ),
+                        IconButton(
+                          onPressed: onDeletePressed,
+                          tooltip: 'Delete',
+                          visualDensity: VisualDensity.compact,
+                          padding: const EdgeInsets.all(4),
+                          constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                          icon: const Icon(Icons.delete_outline_rounded, size: 18, color: AppColors.error),
+                        ),
+                      ],
                     ),
-                    if (hasCategoryName) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFE8F1FB),
-                          borderRadius: BorderRadius.circular(6),
-                          border: Border.all(
-                            color: const Color(0xFF1565C0).withAlpha(60),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Text(
-                          'Category: ${product.categoryName}',
-                          style: textTheme.bodySmall?.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF1565C0),
-                          ),
-                        ),
-                      ),
-                    ],
                   ],
                 ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                _formatPrice(),
-                style: textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF1565C0),
-                ),
-              ),
-              const SizedBox(width: 8),
-              IconButton(
-                padding: const EdgeInsets.all(4),
-                constraints: const BoxConstraints(),
-                onPressed: onQrPressed,
-                tooltip: 'QR Code',
-                icon: const Icon(Icons.qr_code_2_rounded, size: 20),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                padding: const EdgeInsets.all(4),
-                constraints: const BoxConstraints(),
-                onPressed: onEditPressed,
-                tooltip: 'Edit',
-                icon: const Icon(Icons.edit_rounded, size: 20),
-              ),
-              const SizedBox(width: 4),
-              IconButton(
-                padding: const EdgeInsets.all(4),
-                constraints: const BoxConstraints(),
-                onPressed: onDeletePressed,
-                tooltip: 'Delete',
-                icon: const Icon(Icons.delete_outline_rounded,
-                    size: 20, color: Colors.redAccent),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

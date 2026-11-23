@@ -1,7 +1,5 @@
 import 'package:blue_thermal_printer/blue_thermal_printer.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../services/printer_service.dart';
 
 class PrinterSettingsScreen extends StatefulWidget {
@@ -139,7 +137,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
         ),
         title: Text(
           'Printer Settings',
-          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600, color: _textDark),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.w600, color: _textDark),
         ),
       ),
       body: SafeArea(
@@ -181,7 +179,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           const SizedBox(height: 14),
                           Text(
                             statusTitle,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: _textDark,
@@ -190,7 +188,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           const SizedBox(height: 6),
                           Text(
                             statusSubtitle,
-                            style: GoogleFonts.poppins(
+                            style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 14,
                               color: _textSub,
                             ),
@@ -210,7 +208,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                               const SizedBox(width: 8),
                               Text(
                                 isCardConnected ? 'Connected' : 'Disconnected',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontWeight: FontWeight.w600,
                                   color: isCardConnected ? Colors.green.shade700 : Colors.grey.shade700,
                                 ),
@@ -221,12 +219,12 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           if (_isConnected) ...[
                             Text(
                               'Connection: Bluetooth',
-                              style: GoogleFonts.poppins(fontSize: 13, color: _textSub),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: _textSub),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'Status: Connected',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 13,
                                 color: Colors.green.shade700,
                                 fontWeight: FontWeight.w600,
@@ -235,7 +233,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                           ] else ...[
                             Text(
                               'Connection: Bluetooth',
-                              style: GoogleFonts.poppins(fontSize: 13, color: _textSub),
+                              style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: _textSub),
                             ),
                           ],
                           const SizedBox(height: 20),
@@ -269,12 +267,12 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                         children: [
                           Text(
                             'Bluetooth',
-                            style: GoogleFonts.poppins(fontSize: 14, fontWeight: FontWeight.w600, color: _textDark),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 14, fontWeight: FontWeight.w600, color: _textDark),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             _settings.printerName ?? 'No printer selected',
-                            style: GoogleFonts.poppins(fontSize: 14, color: _textSub),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textSub),
                           ),
                           const SizedBox(height: 16),
                           SizedBox(
@@ -284,7 +282,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                               icon: const Icon(Icons.add_rounded),
                               label: Text(
                                 hasSavedPrinter ? 'Change Printer' : 'Connect Printer',
-                                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
                               ),
                             ),
                           ),
@@ -299,100 +297,92 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                         children: [
                           Text(
                             'Printer Name',
-                            style: GoogleFonts.poppins(fontSize: 12, color: _textSub),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: _textSub),
                           ),
                           const SizedBox(height: 5),
                           Text(
                             _settings.printerName ?? 'Not configured',
-                            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
                           ),
                           const SizedBox(height: 18),
                           Text(
                             'Connection Type',
-                            style: GoogleFonts.poppins(fontSize: 12, color: _textSub),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: _textSub),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             'Bluetooth',
-                            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
+                            style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
                           ),
                           const SizedBox(height: 18),
-                          Text('Paper Size', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
+                          Text('Paper Size', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Radio<String>(
-                                      value: '58mm',
-                                      groupValue: _settings.paperSize,
-                                      onChanged: (value) async {
-                                        if (value == null) return;
-                                        await _printerService.updateSettings(paperSize: value);
-                                        await _refreshPrinterState();
-                                      },
-                                    ),
-                                    const Text('58 mm'),
-                                  ],
+                          RadioGroup<String>(
+                            groupValue: _settings.paperSize,
+                            onChanged: (value) async {
+                              if (value == null) return;
+                              await _printerService.updateSettings(paperSize: value);
+                              await _refreshPrinterState();
+                            },
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Radio<String>(
+                                        value: '58mm',
+                                      ),
+                                      const Text('58 mm'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Radio<String>(
-                                      value: '80mm',
-                                      groupValue: _settings.paperSize,
-                                      onChanged: (value) async {
-                                        if (value == null) return;
-                                        await _printerService.updateSettings(paperSize: value);
-                                        await _refreshPrinterState();
-                                      },
-                                    ),
-                                    const Text('80 mm'),
-                                  ],
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Radio<String>(
+                                        value: '80mm',
+                                      ),
+                                      const Text('80 mm'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 8),
-                          Text('Character / Print Mode', style: GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
+                          Text('Character / Print Mode', style: TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600, color: _textDark)),
                           const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Radio<bool>(
-                                      value: false,
-                                      groupValue: _settings.compactMode,
-                                      onChanged: (value) async {
-                                        if (value == null) return;
-                                        await _printerService.updateSettings(compactMode: value);
-                                        await _refreshPrinterState();
-                                      },
-                                    ),
-                                    const Text('Normal'),
-                                  ],
+                          RadioGroup<bool>(
+                            groupValue: _settings.compactMode,
+                            onChanged: (value) async {
+                              if (value == null) return;
+                              await _printerService.updateSettings(compactMode: value);
+                              await _refreshPrinterState();
+                            },
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Radio<bool>(
+                                        value: false,
+                                      ),
+                                      const Text('Normal'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Expanded(
-                                child: Row(
-                                  children: [
-                                    Radio<bool>(
-                                      value: true,
-                                      groupValue: _settings.compactMode,
-                                      onChanged: (value) async {
-                                        if (value == null) return;
-                                        await _printerService.updateSettings(compactMode: value);
-                                        await _refreshPrinterState();
-                                      },
-                                    ),
-                                    const Text('Compact'),
-                                  ],
+                                Expanded(
+                                  child: Row(
+                                    children: [
+                                      const Radio<bool>(
+                                        value: true,
+                                      ),
+                                      const Text('Compact'),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                           const SizedBox(height: 8),
                           SwitchListTile.adaptive(
@@ -421,7 +411,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       title: 'Default Printer',
                       child: Text(
                         _settings.printerName ?? 'No default printer selected',
-                        style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600, color: _textDark),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -434,7 +424,7 @@ class _PrinterSettingsScreenState extends State<PrinterSettingsScreen> {
                       ),
                       child: Text(
                         'Make sure your thermal printer is powered on and paired with your Android device.',
-                        style: GoogleFonts.poppins(fontSize: 12, color: _textSub),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 12, color: _textSub),
                       ),
                     ),
                   ],
@@ -465,7 +455,7 @@ class _SettingsPanel extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF102A43)),
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w700, color: const Color(0xFF102A43)),
           ),
           const SizedBox(height: 12),
           child,
@@ -556,7 +546,7 @@ List<BluetoothDevice> _devices = const <BluetoothDevice>[];
               Expanded(
                 child: Text(
                   'Connect Printer',
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: TextStyle(fontFamily: 'Poppins', fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ),
               IconButton(
@@ -568,7 +558,7 @@ List<BluetoothDevice> _devices = const <BluetoothDevice>[];
           const SizedBox(height: 6),
           Text(
             'Connection Type',
-            style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF627D98)),
+            style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: const Color(0xFF627D98)),
           ),
           const SizedBox(height: 10),
           Row(
@@ -605,7 +595,7 @@ List<BluetoothDevice> _devices = const <BluetoothDevice>[];
               ),
               child: Text(
                 _error!,
-                style: GoogleFonts.poppins(color: Colors.red.shade700),
+                style: TextStyle(fontFamily: 'Poppins', color: Colors.red.shade700),
               ),
             )
           else if (_devices.isEmpty)
@@ -617,7 +607,7 @@ List<BluetoothDevice> _devices = const <BluetoothDevice>[];
               ),
               child: Text(
                 'No paired Bluetooth printers found. Turn on the printer and pair it with the phone first.',
-                style: GoogleFonts.poppins(color: const Color(0xFF102A43)),
+                style: TextStyle(fontFamily: 'Poppins', color: const Color(0xFF102A43)),
               ),
             )
           else
@@ -625,7 +615,7 @@ List<BluetoothDevice> _devices = const <BluetoothDevice>[];
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: _devices.length,
-                separatorBuilder: (_, __) => const Divider(height: 1),
+                separatorBuilder: (_, _) => const Divider(height: 1),
                 itemBuilder: (_, index) {
                   final device = _devices[index];
                   return ListTile(

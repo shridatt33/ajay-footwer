@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/category.dart';
 import '../services/category_repository.dart';
 import 'add_edit_category_screen.dart';
@@ -40,7 +38,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
       SnackBar(
         content: Text(
           message,
-          style: GoogleFonts.poppins(fontSize: 13, color: Colors.white),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white),
         ),
         backgroundColor: isError ? Colors.red.shade700 : _primaryRoyalBlue,
         behavior: SnackBarBehavior.floating,
@@ -100,21 +98,21 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             const SizedBox(width: 12),
             Text(
               'Delete Category',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontWeight: FontWeight.w600, color: _textDark),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to delete "${category.name}"? This action cannot be undone.',
-          style: GoogleFonts.poppins(fontSize: 14, color: _textSecondary),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textSecondary),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
             child: Text(
               'Cancel',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontWeight: FontWeight.w500, color: _textSecondary),
             ),
           ),
@@ -129,7 +127,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             ),
             child: Text(
               'Delete',
-              style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+              style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -159,7 +157,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         elevation: 0.5,
         title: Text(
           'Categories',
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 20,
             fontWeight: FontWeight.w700,
             color: _textDark,
@@ -183,7 +181,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
         icon: const Icon(Icons.add_rounded),
         label: Text(
           'Add Category',
-          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+          style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
         ),
       ),
       body: SafeArea(
@@ -216,7 +214,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                             children: [
                               Text(
                                 'Total Categories: ${allCategories.length}',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 13,
                                   fontWeight: FontWeight.w600,
                                   color: _textSecondary,
@@ -245,7 +243,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                                     const SizedBox(width: 5),
                                     Text(
                                       'ERP Directory Active',
-                                      style: GoogleFonts.poppins(
+                                      style: TextStyle(fontFamily: 'Poppins', 
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
                                         color: Colors.green.shade700,
@@ -266,7 +264,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                               padding:
                                   const EdgeInsets.fromLTRB(16, 4, 16, 100),
                               itemCount: allCategories.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(height: 10),
                               itemBuilder: (context, index) {
                                 return _CategoryCard(
@@ -311,7 +309,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     const SizedBox(height: 16),
                     Text(
                       'No categories yet',
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                         color: _textDark,
@@ -321,7 +319,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                     Text(
                       'Add your first category.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 13, color: _textSecondary),
                     ),
                     const SizedBox(height: 24),
@@ -339,7 +337,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                       label: Text(
                         'Add Category',
                         style:
-                            GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                            TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],
@@ -364,7 +362,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             const SizedBox(height: 16),
             Text(
               'Unable to load categories.',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
                 color: _textDark,
@@ -374,7 +372,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
             Text(
               'Please check server connection.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 13,
                 color: _textSecondary,
               ),
@@ -393,7 +391,7 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
               icon: const Icon(Icons.refresh_rounded),
               label: Text(
                 'Retry',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -458,7 +456,7 @@ class _CategoryCard extends StatelessWidget {
                   children: [
                     Text(
                       category.name,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: _textDark,
@@ -468,7 +466,7 @@ class _CategoryCard extends StatelessWidget {
                     if (category.sizes.isEmpty)
                       Text(
                         'No sizes configured',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 12,
                           color: _textSecondary,
                         ),
@@ -489,7 +487,7 @@ class _CategoryCard extends StatelessWidget {
                             ),
                             child: Text(
                               'Size $size',
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
                                 color: _primaryRoyalBlue,

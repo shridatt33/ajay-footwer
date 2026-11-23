@@ -86,10 +86,17 @@ class BillService {
 
   // ── GET /bills ──────────────────────────────────────────────────────────────
 
-  Future<List<Bill>> fetchBills({String? search, String? status}) async {
+  Future<List<Bill>> fetchBills({
+    String? search,
+    String? status,
+    String? customerId,
+  }) async {
     final params = <String, String>{};
     if (search != null && search.isNotEmpty) params['search'] = search;
     if (status != null && status.isNotEmpty) params['status'] = status;
+    if (customerId != null && customerId.isNotEmpty) {
+      params['customerId'] = customerId;
+    }
 
     final uri = Uri.parse('$_baseUrl/bills').replace(queryParameters: params);
     debugPrint('[BillService] GET $uri');

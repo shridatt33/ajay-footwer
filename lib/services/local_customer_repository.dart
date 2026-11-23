@@ -154,7 +154,7 @@ class LocalCustomerRepository {
   }
 
   /// Called after a bill is generated to add the invoice to the customer's
-  /// purchase history in MongoDB via PUT /customers/<id>.
+  /// purchase history in MongoDB via PUT /customers/{customerId}.
   /// [amount] should be the bill total for "Added to A/C" bills, or 0.0 for
   /// "Paid" bills — the outstanding balance is only incremented when amount > 0.
   Future<void> addInvoiceToCustomer({

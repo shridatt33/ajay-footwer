@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'screens/barcode_studio_screen.dart';
 import 'screens/billing_history_screen.dart';
 import 'screens/billing_screen.dart';
 import 'screens/categories_screen.dart';
@@ -8,13 +9,22 @@ import 'screens/customers_screen.dart';
 import 'screens/payments_screen.dart';
 import 'screens/products_screen.dart';
 import 'screens/profile_screen.dart';
+import 'screens/purchase_entry_screen.dart';
+import 'screens/settings_screen.dart';
 import 'services/dashboard_service.dart';
+import 'services/local_customer_repository.dart';
+import 'services/local_product_repository.dart';
 import 'services/shop_profile_repository.dart';
+import 'theme/app_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  // Pre-fetch business profile so bill/invoice always has latest data
+  // Disable runtime downloading from fonts.gstatic.com to ensure 100% offline support
+  GoogleFonts.config.allowRuntimeFetching = false;
+
   ShopProfileRepository.instance.fetchProfile();
+  LocalProductRepository.instance.fetchProducts();
+  LocalCustomerRepository.instance.fetchCustomers();
   runApp(const SwamidattaAgenciesApp());
 }
 
@@ -26,47 +36,27 @@ class SwamidattaAgenciesApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Swamidatta Agencies',
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1565C0),
-          brightness: Brightness.light,
-        ),
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        textTheme: GoogleFonts.poppinsTextTheme(),
-        appBarTheme: AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFF102A43),
-          elevation: 0,
-          centerTitle: false,
-          surfaceTintColor: Colors.transparent,
-          titleTextStyle: GoogleFonts.poppins(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF102A43),
-          ),
-        ),
-      ),
+      theme: AppTheme.lightTheme,
       routes: <String, WidgetBuilder>{
         '/billing': (_) => const BillingScreen(),
         '/products': (_) => const ProductsScreen(),
+        '/barcode-studio': (_) => const BarcodeStudioScreen(),
         '/customers': (_) => const CustomersScreen(),
         '/profile': (_) => const ProfileScreen(),
         '/categories': (_) => const CategoriesScreen(),
         '/billing-history': (_) => const BillingHistoryScreen(),
-        '/purchase-entry': (_) =>
-            const PlaceholderRoutePage(title: 'Purchase Entry'),
+        '/purchase-entry': (_) => const PurchaseEntryScreen(),
         '/companies': (_) => const PlaceholderRoutePage(title: 'Companies'),
-        '/retailers': (_) => const PlaceholderRoutePage(title: 'Retailers'),
+        '/retailers': (_) => const CustomersScreen(),
         '/payments': (_) => const PaymentsScreen(),
-        '/settings': (_) => const PlaceholderRoutePage(title: 'Settings'),
+        '/settings': (_) => const SettingsScreen(),
       },
       home: const DashboardShell(),
     );
   }
 }
 
-// ── Shell ─────────────────────────────────────────────────────────────────────
+// ── Dashboard Shell with Modern Bottom Navigation ────────────────────────────
 
 class DashboardShell extends StatefulWidget {
   const DashboardShell({super.key});
@@ -75,7 +65,7 @@ class DashboardShell extends StatefulWidget {
   State<DashboardShell> createState() => _DashboardShellState();
 }
 
-class _DashboardShellState extends State<DashboardShell> with RouteAware {
+class _DashboardShellState extends State<DashboardShell> {
   int _selectedIndex = 0;
 
   static const List<String> _bottomRoutes = <String>[
@@ -96,28 +86,64 @@ class _DashboardShellState extends State<DashboardShell> with RouteAware {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: const DashboardHome(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (i) => _handleBottomNavigation(context, i),
-        destinations: const [
-          NavigationDestination(
-              icon: Icon(Icons.home_rounded), label: 'Home'),
-          NavigationDestination(
-              icon: Icon(Icons.receipt_long_rounded), label: 'Billing'),
-          NavigationDestination(
-              icon: Icon(Icons.inventory_2_rounded), label: 'Products'),
-          NavigationDestination(
-              icon: Icon(Icons.people_alt_rounded), label: 'Customers'),
-          NavigationDestination(
-              icon: Icon(Icons.person_rounded), label: 'Profile'),
-        ],
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.06),
+              blurRadius: 16,
+              offset: const Offset(0, -4),
+            ),
+          ],
+          border: const Border(
+            top: BorderSide(color: AppColors.border, width: 0.8),
+          ),
+        ),
+        child: NavigationBar(
+          selectedIndex: _selectedIndex,
+          onDestinationSelected: (i) => _handleBottomNavigation(context, i),
+          backgroundColor: Colors.white,
+          elevation: 0,
+          indicatorColor: AppColors.primaryLight,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          height: 68,
+          destinations: const [
+            NavigationDestination(
+              icon: Icon(Icons.home_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.home_rounded, color: AppColors.primary),
+              label: 'Home',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.receipt_long_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.receipt_long_rounded, color: AppColors.primary),
+              label: 'Billing',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.inventory_2_outlined, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.inventory_2_rounded, color: AppColors.primary),
+              label: 'Products',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.people_outline_rounded, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.people_alt_rounded, color: AppColors.primary),
+              label: 'Customers',
+            ),
+            NavigationDestination(
+              icon: Icon(Icons.person_outline_rounded, color: AppColors.textSecondary),
+              selectedIcon: Icon(Icons.person_rounded, color: AppColors.primary),
+              label: 'Profile',
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Dashboard Home (live data) ────────────────────────────────────────────────
+// ── Dashboard Home (Live Data & Modern Architecture) ─────────────────────────
 
 class DashboardHome extends StatefulWidget {
   const DashboardHome({super.key});
@@ -131,56 +157,92 @@ class _DashboardHomeState extends State<DashboardHome> {
   bool _isLoading = false;
   String? _error;
 
-  // Quick-action definitions (static — routes only)
+  // 8 Quick Actions in required order
   static const List<QuickActionData> _quickActions = <QuickActionData>[
     QuickActionData(
-        title: 'Purchase Entry',
-        icon: Icons.shopping_bag_rounded,
-        routeName: '/purchase-entry',
-        color: Color(0xFF1565C0)),
+      title: 'Purchase Entry',
+      subtitle: 'Inward stock & bills',
+      icon: Icons.add_shopping_cart_rounded,
+      routeName: '/purchase-entry',
+      color: AppColors.primary,
+      bgColor: Color(0xFFEFF6FF),
+      isPrimaryAction: true,
+    ),
     QuickActionData(
-        title: 'Products',
-        icon: Icons.category_rounded,
-        routeName: '/products',
-        color: Color(0xFF2E7D32)),
+      title: 'Products',
+      subtitle: 'Catalog & sizes',
+      icon: Icons.inventory_2_rounded,
+      routeName: '/products',
+      color: Color(0xFF059669),
+      bgColor: Color(0xFFECFDF5),
+    ),
     QuickActionData(
-        title: 'Billing History',
-        icon: Icons.history_rounded,
-        routeName: '/billing-history',
-        color: Color(0xFF7B1FA2)),
+      title: 'Barcode Studio',
+      subtitle: 'Print Code 128',
+      icon: Icons.barcode_reader,
+      routeName: '/barcode-studio',
+      color: Color(0xFF2563EB),
+      bgColor: Color(0xFFEFF6FF),
+    ),
     QuickActionData(
-        title: 'Billing',
-        icon: Icons.receipt_long_rounded,
-        routeName: '/billing',
-        color: Color(0xFF00838F)),
+      title: 'Billing History',
+      subtitle: 'Recent invoices',
+      icon: Icons.history_rounded,
+      routeName: '/billing-history',
+      color: Color(0xFF7C3AED),
+      bgColor: Color(0xFFF5F3FF),
+    ),
     QuickActionData(
-        title: 'Customers',
-        icon: Icons.people_alt_rounded,
-        routeName: '/customers',
-        color: Color(0xFFF57C00)),
+      title: 'Billing',
+      subtitle: 'POS scan & sale',
+      icon: Icons.point_of_sale_rounded,
+      routeName: '/billing',
+      color: Color(0xFF2563EB),
+      bgColor: Color(0xFFEFF6FF),
+      isPrimaryAction: true,
+    ),
     QuickActionData(
-        title: 'Payments',
-        icon: Icons.payments_rounded,
-        routeName: '/payments',
-        color: Color(0xFFD32F2F)),
+      title: 'Customers',
+      subtitle: 'Retailers ledger',
+      icon: Icons.people_alt_rounded,
+      routeName: '/customers',
+      color: Color(0xFFD97706),
+      bgColor: Color(0xFFFFFBEB),
+    ),
     QuickActionData(
-        title: 'Settings',
-        icon: Icons.settings_rounded,
-        routeName: '/settings',
-        color: Color(0xFF5D4037)),
+      title: 'Payments',
+      subtitle: 'Collections & dues',
+      icon: Icons.account_balance_wallet_rounded,
+      routeName: '/payments',
+      color: Color(0xFFDC2626),
+      bgColor: Color(0xFFFEF2F2),
+    ),
+    QuickActionData(
+      title: 'Settings',
+      subtitle: 'Printer & system',
+      icon: Icons.settings_rounded,
+      routeName: '/settings',
+      color: Color(0xFF4B5563),
+      bgColor: Color(0xFFF3F4F6),
+    ),
   ];
 
   @override
   void initState() {
     super.initState();
-    _loadSummary();
+    _initDashboardData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Re-fetch every time this widget is shown (e.g. returning from sub-screens)
-    _loadSummary();
+  Future<void> _initDashboardData() async {
+    // 1. Immediately display cached summary if present
+    final cached = await DashboardService.instance.loadCachedSummary();
+    if (mounted && cached != null && _summary == null) {
+      setState(() {
+        _summary = cached;
+      });
+    }
+    // 2. Fetch fresh live data from API
+    await _loadSummary();
   }
 
   Future<void> _loadSummary() async {
@@ -194,6 +256,7 @@ class _DashboardHomeState extends State<DashboardHome> {
       if (mounted) {
         setState(() {
           _summary = summary;
+          _error = null;
           _isLoading = false;
         });
       }
@@ -207,31 +270,27 @@ class _DashboardHomeState extends State<DashboardHome> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = 'Unable to load dashboard data.\nPlease check server connection.';
+          _error = 'Unable to refresh: $e';
           _isLoading = false;
         });
       }
     }
   }
 
-  // ── Formatters ──────────────────────────────────────────────────────────────
-
   String _formatCurrency(double value) {
     if (value >= 10000000) {
-      return '₹ ${(value / 10000000).toStringAsFixed(2)}Cr';
+      return '₹${(value / 10000000).toStringAsFixed(2)} Cr';
     } else if (value >= 100000) {
-      return '₹ ${(value / 100000).toStringAsFixed(2)}L';
+      return '₹${(value / 100000).toStringAsFixed(2)} L';
     }
-    // Indian grouping: 1,28,450
     final intPart = value.toInt();
-    return '₹ ${_indianFormat(intPart)}';
+    return '₹${_indianFormat(intPart)}';
   }
 
   String _indianFormat(int n) {
     if (n == 0) return '0';
     final s = n.toString();
     if (s.length <= 3) return s;
-    // Last 3 digits, then groups of 2
     final last3 = s.substring(s.length - 3);
     final rest = s.substring(0, s.length - 3);
     final buffer = StringBuffer();
@@ -242,104 +301,310 @@ class _DashboardHomeState extends State<DashboardHome> {
     return '${buffer.toString()},$last3';
   }
 
-  String _formatCount(int n) => _indianFormat(n);
-
   String _formatToday() {
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December',
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
     ];
     final today = DateTime.now();
     return '${today.day} ${months[today.month - 1]} ${today.year}';
   }
 
-  // ── Build ───────────────────────────────────────────────────────────────────
-
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: RefreshIndicator(
+        color: AppColors.primary,
         onRefresh: _loadSummary,
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
-            // App bar
-            SliverAppBar(
-              pinned: true,
-              backgroundColor: Colors.white,
-              surfaceTintColor: Colors.transparent,
-              elevation: 0,
-              toolbarHeight: 76,
-              titleSpacing: 0,
-              title: const _AppBarContent(),
-              actions: [
-                if (_isLoading)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      ),
-                    ),
-                  )
-                else
-                  IconButton(
-                    onPressed: _loadSummary,
-                    icon: const Icon(Icons.notifications_none_rounded),
-                    tooltip: 'Notifications',
-                  ),
-                const Padding(
-                  padding: EdgeInsets.only(right: 16),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: Color(0xFF1565C0),
-                    child: Text('A',
-                        style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w600)),
+            // Top Header
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(
+                    bottom: BorderSide(color: AppColors.border, width: 0.8),
                   ),
                 ),
-              ],
+                child: Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryLight,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Center(
+                        child: Icon(Icons.storefront_rounded, color: AppColors.primary, size: 24),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Swamidatta Agencies',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Wholesale Footwear Billing System',
+                            style: TextStyle(fontFamily: 'Poppins', 
+                              fontSize: 12,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('All systems operational • ${_formatToday()}'),
+                            behavior: SnackBarBehavior.floating,
+                            backgroundColor: AppColors.textPrimary,
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary),
+                      tooltip: 'Notifications',
+                    ),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      onTap: () => Navigator.pushNamed(context, '/profile'),
+                      child: const CircleAvatar(
+                        radius: 18,
+                        backgroundColor: AppColors.primary,
+                        child: Text(
+                          'A',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
 
+            // Main Content
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
               sliver: SliverList(
                 delegate: SliverChildListDelegate([
-                  _GreetingSection(dateLabel: _formatToday()),
-                  const SizedBox(height: 20),
-                  const SectionHeader(title: 'Overview'),
+                  // Date banner
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Business Overview',
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 12, color: AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Text(
+                              _formatToday(),
+                              style: TextStyle(fontFamily: 'Poppins', 
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 12),
 
-                  // ── Overview Cards ────────────────────────────────────────
-                  _error != null
-                      ? _buildErrorCard()
-                      : _buildOverviewCards(),
+                  if (_summary == null && _isLoading) ...[
+                    Container(
+                      height: 160,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: AppDecorations.card(),
+                      padding: const EdgeInsets.all(24),
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircularProgressIndicator(strokeWidth: 2.5, color: AppColors.primary),
+                            SizedBox(height: 14),
+                            Text(
+                              'Loading business statistics...',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ] else if (_summary == null && _error != null) ...[
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                      decoration: AppDecorations.card(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 48,
+                            height: 48,
+                            decoration: const BoxDecoration(
+                              color: AppColors.warningLight,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.cloud_off_rounded, color: AppColors.warning, size: 24),
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Unable to Load Statistics',
+                            style: TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _error!,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontFamily: 'Poppins',
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton.icon(
+                            onPressed: _loadSummary,
+                            icon: const Icon(Icons.refresh_rounded, size: 16),
+                            label: const Text(
+                              'Retry',
+                              style: TextStyle(
+                                fontFamily: 'Poppins',
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    if (_error != null) ...[
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        margin: const EdgeInsets.only(bottom: 12),
+                        decoration: BoxDecoration(
+                          color: AppColors.warningLight,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.warning.withValues(alpha: 0.4)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.info_outline_rounded, size: 18, color: AppColors.warning),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '$_error (Showing cached overview)',
+                                style: const TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  color: AppColors.textPrimary,
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: _loadSummary,
+                              style: TextButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              child: const Text(
+                                'Retry',
+                                style: TextStyle(
+                                  fontFamily: 'Poppins',
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                    // 6 Modern Statistic Cards Grid
+                    _buildStatCardsGrid(),
+                  ],
 
                   const SizedBox(height: 24),
-                  const SectionHeader(title: 'Quick Actions'),
-                  const SizedBox(height: 12),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final w = (constraints.maxWidth - 12) / 2;
-                      return Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: _quickActions
-                            .map((a) => SizedBox(
-                                  width: w,
-                                  child: QuickActionCard(
-                                    action: a,
-                                    onTap: () => Navigator.pushNamed(
-                                        context, a.routeName),
-                                  ),
-                                ))
-                            .toList(),
-                      );
-                    },
+
+                  // Quick Actions Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Quick Actions',
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Text(
+                        '8 Modules',
+                        style: TextStyle(fontFamily: 'Poppins', 
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textSecondary,
+                        ),
+                      ),
+                    ],
                   ),
+                  const SizedBox(height: 12),
+
+                  // 2-Column Quick Actions Grid
+                  _buildQuickActionsGrid(),
                 ]),
               ),
             ),
@@ -349,37 +614,54 @@ class _DashboardHomeState extends State<DashboardHome> {
     );
   }
 
-  Widget _buildOverviewCards() {
-    final s = _summary;
+  // ── 6 Modern Business Statistic Cards ───────────────────────────────────────
 
-    final cards = <SummaryCardData>[
-      SummaryCardData(
-        title: "Today's Bills",
-        value: s == null ? '—' : _formatCount(s.todayBills),
-        icon: Icons.receipt_rounded,
-        accentColor: const Color(0xFF1565C0),
-        backgroundColor: const Color(0xFFE8F1FB),
-      ),
-      SummaryCardData(
-        title: 'Total Products',
-        value: s == null ? '—' : _formatCount(s.totalProducts),
-        icon: Icons.inventory_2_rounded,
-        accentColor: const Color(0xFF2E7D32),
-        backgroundColor: const Color(0xFFEAF5EA),
-      ),
-      SummaryCardData(
-        title: 'Retailers',
-        value: s == null ? '—' : _formatCount(s.retailers),
+  Widget _buildStatCardsGrid() {
+    final s = _summary;
+    final isLoaded = s != null;
+
+    final stats = <StatCardModel>[
+      StatCardModel(
+        title: 'Total Retailers',
+        value: isLoaded ? _indianFormat(s.retailers) : '—',
         icon: Icons.storefront_rounded,
-        accentColor: const Color(0xFFF57C00),
-        backgroundColor: const Color(0xFFFFF2E5),
+        accentColor: const Color(0xFFD97706),
+        bgColor: const Color(0xFFFFFBEB),
       ),
-      SummaryCardData(
-        title: 'Stock Value',
-        value: s == null ? '—' : _formatCurrency(s.stockValue),
-        icon: Icons.account_balance_wallet_rounded,
-        accentColor: const Color(0xFF6D4C41),
-        backgroundColor: const Color(0xFFF5ECE8),
+      StatCardModel(
+        title: 'Total Products',
+        value: isLoaded ? _indianFormat(s.totalProducts) : '—',
+        icon: Icons.inventory_2_rounded,
+        accentColor: const Color(0xFF059669),
+        bgColor: const Color(0xFFECFDF5),
+      ),
+      StatCardModel(
+        title: 'Total Stock Value',
+        value: isLoaded ? _formatCurrency(s.stockValue) : '—',
+        icon: Icons.wallet_rounded,
+        accentColor: AppColors.primary,
+        bgColor: const Color(0xFFEFF6FF),
+      ),
+      StatCardModel(
+        title: "Today's Sales",
+        value: isLoaded ? _formatCurrency(s.todaySales) : '—',
+        icon: Icons.trending_up_rounded,
+        accentColor: const Color(0xFF2563EB),
+        bgColor: const Color(0xFFEFF6FF),
+      ),
+      StatCardModel(
+        title: "Today's Purchases",
+        value: isLoaded ? _formatCurrency(s.todayPurchases > 0 ? s.todayPurchases : 0.0) : '₹0',
+        icon: Icons.shopping_cart_checkout_rounded,
+        accentColor: const Color(0xFF0D9488),
+        bgColor: const Color(0xFFF0FDFA),
+      ),
+      StatCardModel(
+        title: 'Pending Payments',
+        value: isLoaded ? _formatCurrency(s.pendingPayments > 0 ? s.pendingPayments : 0.0) : '₹0',
+        icon: Icons.pending_actions_rounded,
+        accentColor: const Color(0xFFDC2626),
+        bgColor: const Color(0xFFFEF2F2),
       ),
     ];
 
@@ -389,327 +671,205 @@ class _DashboardHomeState extends State<DashboardHome> {
         return Wrap(
           spacing: 12,
           runSpacing: 12,
-          children: cards
-              .map((card) => SizedBox(
-                    width: cardWidth,
-                    child: SummaryCard(data: card, isLoading: _isLoading && s == null),
-                  ))
-              .toList(),
+          children: stats.map((stat) {
+            return SizedBox(
+              width: cardWidth,
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: AppDecorations.card(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: stat.bgColor,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Icon(stat.icon, color: stat.accentColor, size: 20),
+                        ),
+                        if (_isLoading)
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(strokeWidth: 1.5),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      stat.value,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textPrimary,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      stat.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontFamily: 'Poppins', 
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
         );
       },
     );
   }
 
-  Widget _buildErrorCard() {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.wifi_off_rounded, size: 40, color: Colors.red.shade300),
-          const SizedBox(height: 12),
-          Text(
-            'Unable to load dashboard data',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: const Color(0xFF102A43),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Please check server connection.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.poppins(
-              fontSize: 12,
-              color: Colors.black54,
-            ),
-          ),
-          const SizedBox(height: 14),
-          ElevatedButton.icon(
-            onPressed: _loadSummary,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF1565C0),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            icon: const Icon(Icons.refresh_rounded, size: 18),
-            label: Text('Retry',
-                style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
-}
+  // ── 2-Column Quick Actions Grid (8 Modules) ────────────────────────────────
 
-// ── Reusable widgets ──────────────────────────────────────────────────────────
-
-class _AppBarContent extends StatelessWidget {
-  const _AppBarContent();
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: const Color(0xFFE8F1FB),
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Center(
-            child: Text('SA',
-                style: TextStyle(
-                    color: Color(0xFF1565C0),
-                    fontWeight: FontWeight.w700)),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Swamidatta Agencies',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Wholesale Footwear Billing System',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodySmall
-                    ?.copyWith(color: Colors.black54),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _GreetingSection extends StatelessWidget {
-  const _GreetingSection({required this.dateLabel});
-
-  final String dateLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1565C0).withValues(alpha: 0.22),
-            blurRadius: 24,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Welcome, Admin 👋',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  color: Colors.white,
-                  fontWeight: FontWeight.w700,
+  Widget _buildQuickActionsGrid() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = (constraints.maxWidth - 12) / 2;
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: _quickActions.map((action) {
+            return SizedBox(
+              width: cardWidth,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => Navigator.pushNamed(context, action.routeName),
+                  borderRadius: BorderRadius.circular(16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 16),
+                    decoration: action.isPrimaryAction
+                        ? BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.6), width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: AppColors.primary.withValues(alpha: 0.12),
+                                blurRadius: 14,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          )
+                        : AppDecorations.card(),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: BoxDecoration(
+                                color: action.bgColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(action.icon, color: action.color, size: 24),
+                            ),
+                            if (action.isPrimaryAction)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: AppColors.primary,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'DAILY',
+                                  style: TextStyle(fontFamily: 'Poppins', 
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          action.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontFamily: 'Poppins', 
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          action.subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(fontFamily: 'Poppins', 
+                            fontSize: 11,
+                            fontWeight: FontWeight.w400,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            dateLabel,
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium
-                ?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
-          ),
-        ],
-      ),
+              ),
+            );
+          }).toList(),
+        );
+      },
     );
   }
 }
 
-class SectionHeader extends StatelessWidget {
-  const SectionHeader({super.key, required this.title});
+// ── Models & Placeholders ───────────────────────────────────────────────────
 
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      title,
-      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: const Color(0xFF102A43),
-          ),
-    );
-  }
-}
-
-class SummaryCardData {
-  const SummaryCardData({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.accentColor,
-    required this.backgroundColor,
-  });
-
+class StatCardModel {
   final String title;
   final String value;
   final IconData icon;
   final Color accentColor;
-  final Color backgroundColor;
-}
+  final Color bgColor;
 
-class SummaryCard extends StatelessWidget {
-  const SummaryCard({super.key, required this.data, this.isLoading = false});
-
-  final SummaryCardData data;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: data.backgroundColor,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(data.icon, color: data.accentColor),
-          ),
-          const SizedBox(height: 14),
-          isLoading
-              ? Container(
-                  height: 22,
-                  width: 80,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade200,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                )
-              : Text(
-                  data.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF102A43),
-                      ),
-                ),
-          const SizedBox(height: 6),
-          Text(
-            data.title,
-            style: Theme.of(context)
-                .textTheme
-                .bodySmall
-                ?.copyWith(color: Colors.black54),
-          ),
-        ],
-      ),
-    );
-  }
+  const StatCardModel({
+    required this.title,
+    required this.value,
+    required this.icon,
+    required this.accentColor,
+    required this.bgColor,
+  });
 }
 
 class QuickActionData {
-  const QuickActionData({
-    required this.title,
-    required this.icon,
-    required this.routeName,
-    required this.color,
-  });
-
   final String title;
+  final String subtitle;
   final IconData icon;
   final String routeName;
   final Color color;
-}
+  final Color bgColor;
+  final bool isPrimaryAction;
 
-class QuickActionCard extends StatelessWidget {
-  const QuickActionCard(
-      {super.key, required this.action, required this.onTap});
-
-  final QuickActionData action;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.white,
-      elevation: 2,
-      shadowColor: Colors.black12,
-      borderRadius: BorderRadius.circular(16),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: action.color.withValues(alpha: 0.12),
-                child: Icon(action.icon, color: action.color),
-              ),
-              const SizedBox(height: 14),
-              Text(
-                action.title,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: const Color(0xFF102A43),
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+  const QuickActionData({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.routeName,
+    required this.color,
+    required this.bgColor,
+    this.isPrimaryAction = false,
+  });
 }
 
 class PlaceholderRoutePage extends StatelessWidget {
@@ -720,6 +880,7 @@ class PlaceholderRoutePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(title: Text(title)),
       body: Center(
         child: Padding(
@@ -727,25 +888,31 @@ class PlaceholderRoutePage extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.construction_rounded,
-                  size: 72,
-                  color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.primaryLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.handyman_rounded, size: 48, color: AppColors.primary),
+              ),
+              const SizedBox(height: 20),
               Text(
-                '$title screen coming soon',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                textAlign: TextAlign.center,
+                '$title Coming Soon',
+                style: TextStyle(fontFamily: 'Poppins', 
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 8),
               Text(
-                'This is a placeholder route for future module navigation.',
+                'This feature is integrated and will be activated in the next workflow.',
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .bodyMedium
-                    ?.copyWith(color: Colors.black54),
+                style: TextStyle(fontFamily: 'Poppins', 
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                ),
               ),
             ],
           ),

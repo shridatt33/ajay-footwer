@@ -1,5 +1,5 @@
+import 'package:barcode_widget/barcode_widget.dart';
 import 'package:flutter/material.dart';
-import 'package:qr_flutter/qr_flutter.dart';
 
 class QrDialog extends StatefulWidget {
   const QrDialog({
@@ -25,35 +25,27 @@ class _QrDialogState extends State<QrDialog> {
   bool _isBusy = false;
 
   Future<void> _handleDownload() async {
-    if (_isBusy) {
-      return;
-    }
+    if (_isBusy) return;
     setState(() => _isBusy = true);
     try {
       await widget.onDownload();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('QR code downloaded successfully.')),
+          const SnackBar(content: Text('Barcode downloaded successfully.')),
         );
       }
     } finally {
-      if (mounted) {
-        setState(() => _isBusy = false);
-      }
+      if (mounted) setState(() => _isBusy = false);
     }
   }
 
   Future<void> _handlePrint() async {
-    if (_isBusy) {
-      return;
-    }
+    if (_isBusy) return;
     setState(() => _isBusy = true);
     try {
       await widget.onPrint();
     } finally {
-      if (mounted) {
-        setState(() => _isBusy = false);
-      }
+      if (mounted) setState(() => _isBusy = false);
     }
   }
 
@@ -69,14 +61,14 @@ class _QrDialogState extends State<QrDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'QR Code Generated',
+                'Barcode Generated',
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Only the Product ID is encoded in the QR.',
+                'Code 128 format • Standard USB/BT scanner readable',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: Colors.black54,
@@ -84,22 +76,25 @@ class _QrDialogState extends State<QrDialog> {
               ),
               const SizedBox(height: 18),
               Container(
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
                 ),
-                child: QrImageView(
-                  data: widget.qrData,
-                  version: QrVersions.auto,
-                  size: 220,
-                  backgroundColor: Colors.white,
-                  dataModuleStyle: const QrDataModuleStyle(
-                    color: Color(0xFF1565C0),
-                  ),
-                  eyeStyle: const QrEyeStyle(
-                    eyeShape: QrEyeShape.square,
-                    color: Color(0xFF1565C0),
+                child: Center(
+                  child: BarcodeWidget(
+                    barcode: Barcode.code128(),
+                    data: widget.qrData,
+                    width: 250,
+                    height: 90,
+                    drawText: true,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -133,15 +128,15 @@ class _QrDialogState extends State<QrDialog> {
                     child: OutlinedButton.icon(
                       onPressed: _isBusy ? null : _handleDownload,
                       icon: const Icon(Icons.download_rounded),
-                      label: const Text('Download QR'),
+                      label: const Text('Download Barcode'),
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: OutlinedButton.icon(
+                    child: FilledButton.icon(
                       onPressed: _isBusy ? null : _handlePrint,
                       icon: const Icon(Icons.print_rounded),
-                      label: const Text('Print QR'),
+                      label: const Text('Print Barcode'),
                     ),
                   ),
                 ],
@@ -149,8 +144,8 @@ class _QrDialogState extends State<QrDialog> {
               const SizedBox(height: 12),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  onPressed: _isBusy ? null : () => Navigator.of(context).pop(),
+                child: TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Done'),
                 ),
               ),

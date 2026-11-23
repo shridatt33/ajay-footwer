@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/customer.dart';
 import '../models/customer_payment.dart';
 import '../services/local_customer_repository.dart';
@@ -112,7 +110,7 @@ class _PaymentsScreenState extends State<PaymentsScreen>
         elevation: 0.5,
         title: Text(
           'Payments',
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 20, fontWeight: FontWeight.w700, color: _textDark),
         ),
         actions: [
@@ -125,9 +123,9 @@ class _PaymentsScreenState extends State<PaymentsScreen>
         bottom: TabBar(
           controller: _tabController,
           labelStyle:
-              GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w600),
+              TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w600),
           unselectedLabelStyle:
-              GoogleFonts.poppins(fontSize: 13, fontWeight: FontWeight.w500),
+              TextStyle(fontFamily: 'Poppins', fontSize: 13, fontWeight: FontWeight.w500),
           labelColor: _blue,
           unselectedLabelColor: _textSecondary,
           indicatorColor: _blue,
@@ -141,7 +139,7 @@ class _PaymentsScreenState extends State<PaymentsScreen>
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
         label: Text('Receive Payment',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+            style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
       ),
       body: SafeArea(
         child: TabBarView(
@@ -210,7 +208,7 @@ class _PaymentsScreenState extends State<PaymentsScreen>
                       physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
                       itemCount: sorted.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
                       itemBuilder: (_, i) => _CustomerOutstandingCard(
                         customer: sorted[i],
                         onReceivePayment: () =>
@@ -281,7 +279,7 @@ class _PaymentsScreenState extends State<PaymentsScreen>
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 120),
         itemCount: filtered.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (_, i) => _PaymentCard(payment: filtered[i]),
       ),
     );
@@ -300,10 +298,10 @@ class _PaymentsScreenState extends State<PaymentsScreen>
       child: TextField(
         controller: controller,
         onChanged: onChanged,
-        style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+        style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textDark),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+          hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.grey.shade400),
           prefixIcon: const Icon(Icons.search_rounded, color: _blue),
           suffixIcon: controller.text.isNotEmpty
               ? IconButton(onPressed: onClear, icon: const Icon(Icons.close_rounded))
@@ -345,12 +343,12 @@ class _PaymentsScreenState extends State<PaymentsScreen>
                   const SizedBox(height: 12),
                   Text(message,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 15, fontWeight: FontWeight.w600, color: _textDark)),
                   if (subtitle != null) ...[
                     const SizedBox(height: 6),
                     Text(subtitle,
-                        style: GoogleFonts.poppins(fontSize: 13, color: _textSecondary)),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: _textSecondary)),
                   ],
                 ],
               ),
@@ -405,7 +403,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
               backgroundColor: due ? Colors.orange.shade50 : Colors.green.shade50,
               child: Text(
                 _initials(customer.name),
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: due ? Colors.orange.shade800 : Colors.green.shade700,
@@ -418,7 +416,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(customer.name,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 14, fontWeight: FontWeight.w700, color: _textDark)),
                   const SizedBox(height: 2),
                   Row(
@@ -426,7 +424,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
                       Icon(Icons.phone_outlined, size: 11, color: Colors.grey.shade400),
                       const SizedBox(width: 4),
                       Text(customer.mobile,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 11.5, color: _textSecondary)),
                     ],
                   ),
@@ -443,7 +441,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
                         due
                             ? 'Outstanding: ₹${_fmt(customer.outstandingBalance)}'
                             : 'No Outstanding',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
                           color: due ? Colors.orange.shade800 : Colors.green.shade700,
@@ -466,7 +464,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 child: Text('Receive',
-                    style: GoogleFonts.poppins(fontSize: 12, fontWeight: FontWeight.w600)),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 12, fontWeight: FontWeight.w600)),
               )
             else
               Container(
@@ -477,7 +475,7 @@ class _CustomerOutstandingCard extends StatelessWidget {
                   border: Border.all(color: Colors.green.shade300, width: 0.8),
                 ),
                 child: Text('Paid',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 11, fontWeight: FontWeight.w700, color: Colors.green.shade700)),
               ),
           ],
@@ -536,12 +534,12 @@ class _PaymentCard extends StatelessWidget {
                 children: [
                   // Customer name
                   Text(payment.customerName,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 13, fontWeight: FontWeight.w700, color: _textDark)),
                   if (payment.customerShopName.isNotEmpty) ...[
                     const SizedBox(height: 1),
                     Text(payment.customerShopName,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 12,
                             color: const Color(0xFF1565C0),
                             fontWeight: FontWeight.w600)),
@@ -559,7 +557,7 @@ class _PaymentCard extends StatelessWidget {
                               size: 11, color: Colors.grey.shade500),
                           const SizedBox(width: 4),
                           Text(dateTime,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 11, color: _textSecondary)),
                         ],
                       ),
@@ -570,7 +568,7 @@ class _PaymentCard extends StatelessWidget {
                               size: 11, color: Colors.grey.shade500),
                           const SizedBox(width: 4),
                           Text(payment.paymentMode,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 11, color: _textSecondary)),
                         ],
                       ),
@@ -581,7 +579,7 @@ class _PaymentCard extends StatelessWidget {
                   if (payment.reference.isNotEmpty) ...[
                     const SizedBox(height: 2),
                     Text('Ref: ${payment.reference}',
-                        style: GoogleFonts.poppins(fontSize: 11, color: _textSecondary)),
+                        style: TextStyle(fontFamily: 'Poppins', fontSize: 11, color: _textSecondary)),
                   ],
 
                   const SizedBox(height: 6),
@@ -620,7 +618,7 @@ class _PaymentCard extends StatelessWidget {
               padding: const EdgeInsets.only(left: 8),
               child: Text(
                 '- ₹${_fmt(payment.amount)}',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 15,
                     fontWeight: FontWeight.w800,
                     color: Colors.green.shade700),
@@ -648,9 +646,9 @@ class _PaymentCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: GoogleFonts.poppins(fontSize: 9, color: color.withAlpha(180))),
+              style: TextStyle(fontFamily: 'Poppins', fontSize: 9, color: color.withAlpha(180))),
           Text(value,
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 11, fontWeight: FontWeight.w700, color: color)),
         ],
       ),
@@ -772,7 +770,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(msg,
-          style: GoogleFonts.poppins(fontSize: 13, color: Colors.white)),
+          style: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.white)),
       backgroundColor: isError ? Colors.red.shade700 : Colors.green.shade700,
       behavior: SnackBarBehavior.floating,
       duration: Duration(seconds: isError ? 4 : 5),
@@ -815,7 +813,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
               const SizedBox(height: 16),
 
               Text('Receive Payment',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 18, fontWeight: FontWeight.w700, color: _textDark)),
               const SizedBox(height: 20),
 
@@ -823,7 +821,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
               _label('Customer'),
               const SizedBox(height: 6),
               DropdownButtonFormField<Customer>(
-                value: _customer,
+                initialValue: _customer,
                 isExpanded: true,
                 decoration: _inputDecoration(hint: 'Select customer'),
                 items: sorted.map((c) => DropdownMenuItem<Customer>(
@@ -833,7 +831,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
                         ? '${c.name}  •  Due ₹${_fmt(c.outstandingBalance)}'
                         : '${c.name}  •  No Due',
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.poppins(fontSize: 13),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 13),
                   ),
                 )).toList(),
                 onChanged: (c) => setState(() {
@@ -857,12 +855,12 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9.]'))],
                 onChanged: (_) => setState(() {}),
-                style: GoogleFonts.poppins(fontSize: 22, fontWeight: FontWeight.w700),
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 22, fontWeight: FontWeight.w700),
                 decoration: _inputDecoration(hint: '0').copyWith(
                   prefixText: '₹  ',
-                  prefixStyle: GoogleFonts.poppins(
+                  prefixStyle: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 22, fontWeight: FontWeight.w700, color: _textDark),
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 22, fontWeight: FontWeight.w700, color: Colors.grey.shade300),
                 ),
                 validator: (v) {
@@ -892,7 +890,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
                   final sel = _paymentMode == mode;
                   return ChoiceChip(
                     label: Text(mode,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 12, fontWeight: FontWeight.w600)),
                     selected: sel,
                     onSelected: (_) => setState(() => _paymentMode = mode),
@@ -928,7 +926,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
                       : const Icon(Icons.check_circle_rounded, size: 20),
                   label: Text(
                     _isSaving ? 'Saving...' : 'Receive Payment',
-                    style: GoogleFonts.poppins(fontSize: 15, fontWeight: FontWeight.w600),
+                    style: TextStyle(fontFamily: 'Poppins', fontSize: 15, fontWeight: FontWeight.w600),
                   ),
                   style: FilledButton.styleFrom(
                     backgroundColor: Colors.green.shade700,
@@ -947,7 +945,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
   }
 
   Widget _label(String text) => Text(text,
-      style: GoogleFonts.poppins(
+      style: TextStyle(fontFamily: 'Poppins', 
           fontSize: 12, fontWeight: FontWeight.w600, color: _textSecondary));
 
   InputDecoration _inputDecoration({String hint = ''}) => InputDecoration(
@@ -955,7 +953,7 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
         contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
         hintText: hint,
-        hintStyle: GoogleFonts.poppins(fontSize: 13, color: Colors.grey.shade400),
+        hintStyle: TextStyle(fontFamily: 'Poppins', fontSize: 13, color: Colors.grey.shade400),
       );
 
   Widget _outstandingBadge() {
@@ -978,11 +976,11 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text('Current Outstanding',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 11,
                       color: due ? Colors.orange.shade700 : Colors.green.shade600)),
               Text('₹${_fmt(_outstanding)}',
-                  style: GoogleFonts.poppins(
+                  style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: due ? Colors.orange.shade800 : Colors.green.shade700,
@@ -1009,11 +1007,11 @@ class _ReceivePaymentSheetState extends State<_ReceivePaymentSheet> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text('Remaining Outstanding',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 12,
                   color: isZero ? Colors.green.shade700 : Colors.orange.shade700)),
           Text('₹${_fmt(rem)}',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
                 color: isZero ? Colors.green.shade700 : Colors.orange.shade800,
@@ -1043,7 +1041,7 @@ class _ErrorState extends StatelessWidget {
             const SizedBox(height: 16),
             Text(message,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13, color: const Color(0xFF627D98))),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -1056,7 +1054,7 @@ class _ErrorState extends StatelessWidget {
               ),
               icon: const Icon(Icons.refresh_rounded),
               label: Text('Retry',
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
+                  style: TextStyle(fontFamily: 'Poppins', fontWeight: FontWeight.w600)),
             ),
           ],
         ),

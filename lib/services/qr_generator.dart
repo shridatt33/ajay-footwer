@@ -1,18 +1,17 @@
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:permission_handler/permission_handler.dart';
-import 'package:printing/printing.dart';
-import 'package:qr_flutter/qr_flutter.dart';
+import '../models/product.dart';
+import 'barcode_service.dart';
 
+/// Legacy compatibility wrapper delegating to [BarcodeService].
 class QrGeneratorService {
   const QrGeneratorService();
 
+  static const BarcodeService _barcodeService = BarcodeService.instance;
+
   String generateProductId(int sequence) {
-    return 'SWA-${sequence.toString().padLeft(6, '0')}';
+    return _barcodeService.generateBarcode(sequence);
   }
 
   String buildQrData(String productId) {
@@ -20,127 +19,128 @@ class QrGeneratorService {
   }
 
   Future<Uint8List> generateQrImageBytes(String qrData, {double size = 1024}) async {
-    final painter = QrPainter(
-      data: qrData,
-      version: QrVersions.auto,
-      gapless: true,
-      dataModuleStyle: const QrDataModuleStyle(
-        color: Color(0xFF000000),
-      ),
-      eyeStyle: const QrEyeStyle(
-        color: Color(0xFF000000),
-        eyeShape: QrEyeShape.square,
-      ),
+    return _barcodeService.generateBarcodeImageBytes(
+      qrData,
+      width: size,
+      height: size * 0.4,
     );
+  }
 
-    final byteData = await painter.toImageData(size);
-    if (byteData == null) {
-      throw StateError('Unable to generate QR image.');
-    }
+  Future<Uint8List> generateProductQrCardBytes({
+    required String qrData,
+    required String productName,
+    required String productCode,
+    double width = 900,
+    double height = 650,
+  }) async {
+    final product = Product(
+      productId: productCode,
+      productName: productName,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
+    );
+    return _barcodeService.generateProductLabelCardBytes(
+      product: product,
+      width: width,
+      height: height,
+    );
+  }
 
-    return byteData.buffer.asUint8List();
+  Future<void> saveProductQrCardToGallery({
+    required String productName,
+    required String productId,
+    required String qrData,
+  }) async {
+    final product = Product(
+      productId: productId,
+      productName: productName,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
+    );
+    await _barcodeService.saveBarcodeLabelToGallery(product);
   }
 
   Future<void> saveQrCodeToGallery({
     required String qrData,
     required String productId,
   }) async {
-    final bytes = await generateQrImageBytes(qrData);
-
-    if (Platform.isAndroid) {
-      const channel = MethodChannel('com.example.ajayfw/qr_gallery');
-      final androidSdk = await channel.invokeMethod<int>('getAndroidSdk') ?? 0;
-      if (androidSdk < 29) {
-        final permissionStatus = await Permission.storage.request();
-        if (!permissionStatus.isGranted) {
-          throw Exception('Storage permission is required to save the QR code to Gallery.');
-        }
-      }
-    }
-
-    const channel = MethodChannel('com.example.ajayfw/qr_gallery');
-    final saved = await channel.invokeMethod<bool>('saveQrToGallery', {
-      'imageBytes': bytes,
-      'productId': productId,
-    });
-
-    if (saved != true) {
-      throw StateError('Failed to save QR code to Gallery.');
-    }
+    final product = Product(
+      productId: productId,
+      productName: productId,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
+    );
+    await _barcodeService.saveBarcodeLabelToGallery(product);
   }
 
   Future<File> saveQrImageToDocuments({
     required String qrData,
     required String productId,
   }) async {
-    final bytes = await generateQrImageBytes(qrData);
-    final directory = await getApplicationDocumentsDirectory();
-    final file = File('${directory.path}/$productId-qr.png');
-    await file.writeAsBytes(bytes, flush: true);
-    return file;
+    final product = Product(
+      productId: productId,
+      productName: productId,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
+    );
+    return _barcodeService.saveBarcodeToDocuments(product);
+  }
+
+  Future<void> saveProductPdfToDownloads(Product product) async {
+    await _barcodeService.saveBarcodeLabelToGallery(product);
   }
 
   Future<void> printQrCode({
     required String qrData,
     required String productId,
   }) async {
-    final pdfBytes = await buildQrPdfBytes(qrData: qrData, productId: productId);
-    await Printing.layoutPdf(onLayout: (_) async => pdfBytes);
+    final product = Product(
+      productId: productId,
+      productName: productId,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
+    );
+    await _barcodeService.printSingleBarcode(product);
+  }
+
+  Future<Uint8List> buildProductPdfBytes(Product product) async {
+    return _barcodeService.buildSingleBarcodeStickerPdf(product);
   }
 
   Future<Uint8List> buildQrPdfBytes({
     required String qrData,
     required String productId,
   }) async {
-    final qrBytes = await generateQrImageBytes(qrData, size: 720);
-    final document = pw.Document();
-
-    document.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a5,
-        margin: const pw.EdgeInsets.all(24),
-        build: (context) {
-          return pw.Center(
-            child: pw.Column(
-              mainAxisSize: pw.MainAxisSize.min,
-              children: [
-                pw.Text(
-                  'Swamidatta Agencies',
-                  style: pw.TextStyle(
-                    fontSize: 20,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 12),
-                pw.Container(
-                  padding: const pw.EdgeInsets.all(12),
-                  decoration: pw.BoxDecoration(
-                    border: pw.Border.all(width: 1),
-                    borderRadius: pw.BorderRadius.circular(12),
-                  ),
-                  child: pw.Image(
-                    pw.MemoryImage(qrBytes),
-                    width: 220,
-                    height: 220,
-                  ),
-                ),
-                pw.SizedBox(height: 14),
-                pw.Text(
-                  productId,
-                  style: pw.TextStyle(
-                    fontSize: 18,
-                    fontWeight: pw.FontWeight.bold,
-                  ),
-                ),
-                pw.SizedBox(height: 6),
-                pw.Text('Product QR Code'),
-              ],
-            ),
-          );
-        },
-      ),
+    final product = Product(
+      productId: productId,
+      productName: productId,
+      sizeStock: {},
+      price: 0,
+      quantity: 0,
+      barcode: qrData,
+      qrData: qrData,
+      createdAt: DateTime.now(),
     );
-
-    return document.save();
+    return _barcodeService.buildSingleBarcodeStickerPdf(product);
   }
 }

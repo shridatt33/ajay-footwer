@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
 import '../models/bill.dart';
 import '../services/bill_service.dart';
 import 'bill_details_screen.dart';
@@ -82,7 +80,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
         elevation: 0.5,
         title: Text(
           'Billing History',
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 20, fontWeight: FontWeight.w700, color: _textDark),
         ),
         actions: [
@@ -102,10 +100,10 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
               child: TextField(
                 controller: _searchController,
                 onChanged: _onSearchChanged,
-                style: GoogleFonts.poppins(fontSize: 14, color: _textDark),
+                style: TextStyle(fontFamily: 'Poppins', fontSize: 14, color: _textDark),
                 decoration: InputDecoration(
                   hintText: 'Search invoice, customer name or mobile...',
-                  hintStyle: GoogleFonts.poppins(
+                  hintStyle: TextStyle(fontFamily: 'Poppins', 
                       fontSize: 13, color: Colors.grey.shade400),
                   prefixIcon:
                       const Icon(Icons.search_rounded, color: _blue),
@@ -167,7 +165,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
     return FilterChip(
       label: Text(
         label,
-        style: GoogleFonts.poppins(
+        style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 12, fontWeight: FontWeight.w600),
       ),
       selected: isSelected,
@@ -195,7 +193,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
               const SizedBox(height: 16),
               Text(
                 'Unable to load billing history',
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
                     color: _textDark),
@@ -204,7 +202,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
               Text(
                 'Please check server connection.',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(
+                style: TextStyle(fontFamily: 'Poppins', 
                     fontSize: 13, color: _textSecondary),
               ),
               const SizedBox(height: 24),
@@ -220,7 +218,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
                 ),
                 icon: const Icon(Icons.refresh_rounded),
                 label: Text('Retry',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontWeight: FontWeight.w600)),
               ),
             ],
@@ -248,7 +246,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
                       const SizedBox(height: 16),
                       Text(
                         'No Billing History',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                             color: _textDark),
@@ -257,7 +255,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
                       Text(
                         'Your generated bills will appear here.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 13, color: _textSecondary),
                       ),
                     ],
@@ -276,7 +274,7 @@ class _BillingHistoryScreenState extends State<BillingHistoryScreen> {
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
         itemCount: _bills.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           final bill = _bills[index];
           return _BillCard(
@@ -349,7 +347,7 @@ class _BillCard extends StatelessWidget {
                   children: [
                     Text(
                       bill.invoiceNo,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                           color: _textDark),
@@ -357,7 +355,7 @@ class _BillCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       bill.customerName,
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                           fontSize: 12.5,
                           fontWeight: FontWeight.w600,
                           color: _blue),
@@ -370,7 +368,7 @@ class _BillCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           bill.displayDate,
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 11, color: _textSecondary),
                         ),
                         const SizedBox(width: 10),
@@ -379,7 +377,7 @@ class _BillCard extends StatelessWidget {
                         const SizedBox(width: 4),
                         Text(
                           '${bill.products.length} Item${bill.products.length == 1 ? '' : 's'}',
-                          style: GoogleFonts.poppins(
+                          style: TextStyle(fontFamily: 'Poppins', 
                               fontSize: 11, color: _textSecondary),
                         ),
                       ],
@@ -394,7 +392,7 @@ class _BillCard extends StatelessWidget {
                 children: [
                   Text(
                     '₹${_formatAmount(bill.grandTotal)}',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
                         color: _textDark),
@@ -421,7 +419,7 @@ class _BillCard extends StatelessWidget {
                     ),
                     child: Text(
                       bill.status.toUpperCase(),
-                      style: GoogleFonts.poppins(
+                      style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 9.5,
                         fontWeight: FontWeight.w700,
                         color: isPaid

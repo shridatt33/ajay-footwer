@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
@@ -136,6 +135,10 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
           // ── Customer / bill info ────────────────────────────────────────
           _pdfInfoRow('ग्राहक', bill.customerName, ttf, ttfBold),
           pw.SizedBox(height: 3),
+          if (bill.customerShopName.isNotEmpty) ...[
+            _pdfInfoRow('दुकान', bill.customerShopName, ttf, ttfBold),
+            pw.SizedBox(height: 3),
+          ],
           _pdfInfoRow('मोबाईल', bill.customerMobile, ttf, ttfBold),
           pw.SizedBox(height: 3),
           _pdfInfoRow('दिनांक', dateTimeStr, ttf, ttfBold),
@@ -379,7 +382,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text('PDF generation failed: $e',
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: 13, color: Colors.white)),
           backgroundColor: Colors.red.shade700,
           behavior: SnackBarBehavior.floating,
@@ -414,7 +417,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
         ),
         title: Text(
           bill.invoiceNo,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
               fontSize: 18,
               fontWeight: FontWeight.w600,
               color: _textDark),
@@ -506,7 +509,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                   const SizedBox(width: 28),
                   Expanded(
                     child: Text('Product / Sizes',
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: _textSecondary)),
@@ -515,7 +518,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                     width: 70,
                     child: Text('Amount',
                         textAlign: TextAlign.right,
-                        style: GoogleFonts.poppins(
+                        style: TextStyle(fontFamily: 'Poppins', 
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
                             color: _textSecondary)),
@@ -561,7 +564,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text('${idx + 1}',
-                                style: GoogleFonts.poppins(
+                                style: TextStyle(fontFamily: 'Poppins', 
                                     fontSize: 10,
                                     fontWeight: FontWeight.w700,
                                     color: _blue)),
@@ -573,13 +576,13 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(first.productName,
-                                    style: GoogleFonts.poppins(
+                                    style: TextStyle(fontFamily: 'Poppins', 
                                         fontSize: 13,
                                         fontWeight: FontWeight.w600,
                                         color: _textDark)),
                                 Text(
                                   '$sizeLabel  •  ₹${_formatAmount(first.unitPrice)}/pr',
-                                  style: GoogleFonts.poppins(
+                                  style: TextStyle(fontFamily: 'Poppins', 
                                       fontSize: 11, color: _textSecondary),
                                 ),
                               ],
@@ -591,7 +594,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                             child: Text(
                               '₹${_formatAmount(productTotal)}',
                               textAlign: TextAlign.right,
-                              style: GoogleFonts.poppins(
+                              style: TextStyle(fontFamily: 'Poppins', 
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: _textDark),
@@ -681,7 +684,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
                     _isPrinting
                         ? 'Generating PDF...'
                         : 'Print / Download PDF',
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 16, fontWeight: FontWeight.w600),
                   ),
                 ),
@@ -716,7 +719,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
 
   Widget _sectionTitle(String title) {
     return Text(title,
-        style: GoogleFonts.poppins(
+        style: TextStyle(fontFamily: 'Poppins', 
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: _textDark));
@@ -742,12 +745,12 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(label,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 10.5,
                         fontWeight: FontWeight.w500,
                         color: _textSecondary)),
                 Text(value,
-                    style: GoogleFonts.poppins(
+                    style: TextStyle(fontFamily: 'Poppins', 
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: statusColor ?? _textDark)),
@@ -767,13 +770,13 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label,
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: fontSize,
                   fontWeight:
                       bold ? FontWeight.w700 : FontWeight.w500,
                   color: bold ? _textDark : _textSecondary)),
           Text(value,
-              style: GoogleFonts.poppins(
+              style: TextStyle(fontFamily: 'Poppins', 
                   fontSize: fontSize,
                   fontWeight:
                       bold ? FontWeight.w800 : FontWeight.w600,
@@ -796,7 +799,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.poppins(
+            style: TextStyle(fontFamily: 'Poppins', 
               fontSize: fontSize - 1,
               fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
               color: bold ? _textDark : _textSecondary,
@@ -805,7 +808,7 @@ class _BillDetailsScreenState extends State<BillDetailsScreen> {
         ),
         Text(
           value,
-          style: GoogleFonts.poppins(
+          style: TextStyle(fontFamily: 'Poppins', 
             fontSize: fontSize,
             fontWeight: bold ? FontWeight.w800 : FontWeight.w700,
             color: valueColor,
